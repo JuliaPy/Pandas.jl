@@ -1,4 +1,4 @@
-module pandas
+module Pandas
 
 using PyCall
 using PyPlot
