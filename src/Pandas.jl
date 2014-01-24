@@ -10,7 +10,7 @@ export DataFrame, Iloc, Loc, Ix, Series, MultiIndex, Index, GroupBy
 export mean, std, agg, aggregate, median, var, ohlc, transform, groups, indices, get_group
 export iloc,loc,reset_index,index,head,xs,plot,hist,join,align,drop,drop_duplicates,duplicated,filter,first,idxmax,idxmin,last,reindex,reindex_axis,reindex_like,rename,tail,set_index,select,take,truncate,abs,any,clip,clip_lower,clip_upper,corr,corrwith,count,cov,cummax,cummin,cumprod,cumsum,describe,diff,mean,median,min,mode,pct_change,rank,quantile,sum,skew,var,std,dropna,fillna,replace,delevel,pivot,reodrer_levels,sort,sort_index,sortlevel,swaplevel,stack,unstack,T,boxplot
 export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app, values, from_arrays, from_tuples
-export read_csv, read_html, read_json, read_excel, read_table, save, stats,  melt, rolling_count, rolling_sum, rolling_window, rolling_quantile, ewma, set_columns
+export read_csv, read_html, read_json, read_excel, read_table, save, stats,  melt, rolling_count, rolling_sum, rolling_window, rolling_quantile, ewma, set_columns, concat
 
 
 np = pyimport("numpy")
@@ -138,7 +138,7 @@ macro df_pyattrs_eval(methods...)
 end
 
 macro gb_pyattrs(methods...)
-    classes = [:GroupBy]
+    classes = [:GroupBy, :SeriesGroupBy]
     m_exprs = Expr[]
     for method in methods
         exprs = Array(Expr, length(classes))
@@ -175,7 +175,11 @@ macro pyasvec(class, offset)
 
             function $(esc(:setindex!))(pyt::$class, value, idxs...)
                 new_idx = [fix_arg(idx) for idx in idxs]
-                pyt.pyo[:__setitem__](tuple(new_idx...), value)
+                if length(new_idx) > 1
+                    pyt.pyo[:__setitem__](tuple(new_idx...), value)
+                else
+                    pyt.pyo[:__setitem__](new_idx[1], value)
+                end
             end
         end
     end
@@ -195,6 +199,7 @@ end
 @pytype MultiIndex pandas_mod.core[:index]["MultiIndex"]
 @pytype Index pandas_mod.core[:index]["Index"]
 @pytype GroupBy pandas_mod.core[:groupby]["DataFrameGroupBy"]
+@pytype SeriesGroupBy pandas_mod.core[:groupby]["SeriesGroupBy"]
 
 
 @pyattr DataFrame groupby nothing
@@ -202,7 +207,7 @@ end
 @pyattr GroupBy app apply 
 
 
-@gb_pyattrs mean std agg aggregate median var ohlc transform groups indices get_group
+@gb_pyattrs mean std agg aggregate median var ohlc transform groups indices get_group hist plot
 
 @df_pyattrs iloc loc reset_index index head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot
 
@@ -217,11 +222,12 @@ Base.size(df::PandasWrapped) = df.pyo[:shape]
 @pyasvec Iloc true
 @pyasvec DataFrame false
 @pyasvec Index true
+@pyasvec GroupBy false
 
 Base.ndims(df::Union(DataFrame, Series)) = length(size(df))
 
 
-for m in [:read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :rolling_count, :rolling_sum, :rolling_window, :rolling_quantile, :ewma]
+for m in [:read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :rolling_count, :rolling_sum, :rolling_window, :rolling_quantile, :ewma, :concat, :merge]
     delegate(m, quote pandas_mod.$m end)
 end
 
