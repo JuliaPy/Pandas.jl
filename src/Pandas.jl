@@ -191,10 +191,23 @@ macro pyasvec(class, offset)
             end
         end
     end
+    if class in [:Iloc, :Loc, :Ix]
+        length_expr = quote
+            function $(esc(:length))(x::$class)
+                x.pyo[:obj][:__len__]()
+            end
+        end
+    else
+        length_expr = quote
+            @pyattr $class length __len__
+        end
+    end
     quote
         $index_expr
-        @pyattr $class length __len__ 
-        @pyattr $class endof __len__
+        $length_expr
+        function $(esc(:endof))(x::$class)
+            length(x)
+        end
     end
 end
 
@@ -221,6 +234,7 @@ end
 
 @df_pyattrs_eval to_clipboard to_csv to_dense to_dict to_excel to_gbq to_hdf to_html to_json to_latex to_msgpack to_panel to_pickle to_records to_sparse to_sql to_string query
 
+Base.size(x::Union(Loc, Iloc, Ix)) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
 Base.size(df::PandasWrapped) = df.pyo[:shape]
 
