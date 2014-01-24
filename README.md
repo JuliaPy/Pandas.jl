@@ -131,5 +131,5 @@ Changes to the values(...) array propogate back to the underlying series/datafra
 
 Caveats
 ----------
-Only a subset of the most frequently used Pandas methods and objects are currently wrapped. A major omission is the timeseries-related functionality, which will come later (pull requests welcome). 
+Only a subset of the most frequently used Pandas methods and objects are currently wrapped. The current major omissions are timeseries-related functions and Panels functions. Note that even if a function is not wrapped explicitly, it can still be called using various methods from [PyCall](https://github.com/stevengj/PyCall.jl).
 
