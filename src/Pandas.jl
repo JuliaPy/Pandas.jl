@@ -9,13 +9,13 @@ import PyPlot.plot
 export DataFrame, Iloc, Loc, Ix, Series, MultiIndex, Index, GroupBy
 export mean, std, agg, aggregate, median, var, ohlc, transform, groups, indices, get_group
 export iloc,loc,reset_index,index,head,xs,plot,hist,join,align,drop,drop_duplicates,duplicated,filter,first,idxmax,idxmin,last,reindex,reindex_axis,reindex_like,rename,tail,set_index,select,take,truncate,abs,any,clip,clip_lower,clip_upper,corr,corrwith,count,cov,cummax,cummin,cumprod,cumsum,describe,diff,mean,median,min,mode,pct_change,rank,quantile,sum,skew,var,std,dropna,fillna,replace,delevel,pivot,reodrer_levels,sort,sort_index,sortlevel,swaplevel,stack,unstack,T,boxplot
-export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app, values
+export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app, values, from_arrays, from_tuples
 
 
 np = pyimport("numpy")
 pandas_raw = pyimport("pandas")
 pandas_mod = pywrap(pandas_raw)
-type_map = Dict()
+type_map = {}
 
 abstract PandasWrapped
 
@@ -32,7 +32,7 @@ macro pytype(name, class)
                 new(pandas_method(args...; kwargs...))
             end
         end
-        type_map[$class] = $name
+        push!(type_map, ($class, $name))
     end
 end
 
@@ -56,9 +56,9 @@ end
 values(x::PandasWrapped) = convert(PyArray, x.pyo["values"])
 
 function pandas_wrap(pyo::PyObject)
-    for pyt in keys(type_map)
+    for (pyt, pyv) in type_map
         if pyisinstance(pyo, pyt)
-            return type_map[pyt](pyo)
+            return pyv(pyo)
         end
     end
     return convert(PyAny, pyo)
@@ -238,7 +238,9 @@ end
 
 for m in [:from_arrays, :from_tuples]
     @eval function $m(args...; kwargs...)
-        pandas_raw["MultiIndex"][$(quot(m))](args...; kwargs...)
+        f = pandas_raw["MultiIndex"][string($(quot(m)))]
+        res = pycall(f, PyObject, args...; kwargs...)
+        pandas_wrap(res)
     end
 end
 
