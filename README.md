@@ -133,10 +133,3 @@ Caveats
 ----------
 Only a subset of the most frequently used Pandas methods and objects are currently wrapped. A major omission is the timeseries-related functionality, which will come later (pull requests welcome). 
 
-The Pandas ``apply`` function (applied to the return value of ``groupby``) has been renamed ``app`` to avoid conflicting with the built-in name. Passing Julia functions to ``app`` is currently unstable and fairly slow. Passing numpy functions is a good work-around for the time being:
-
-```julia
-g = groupby(df, "age")
-@pyimport numpy
-app(g, numpy.std)
-```
