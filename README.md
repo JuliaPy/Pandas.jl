@@ -103,9 +103,9 @@ to_json(df, "my_json_file.json")
 
 Performance
 ------------
-Most Pandas operations on medium to large dataframes are very fast, since the overhead of calling into the Python API is small compared to the time spent inside Pandas' highly-efficient C implementation. 
+Most Pandas operations on medium to large dataframes are very fast, since the overhead of calling into the Python API is small compared to the time spent inside Pandas' highly efficient C implementation. 
 
-Setting and getting individual elements of a dataframe or series is slow however, since it requires a round-trip of communication with Python. Instead, use the ``values`` method to get a version of a series or homogeneous dataframe that requires no copying and is as fast to access and write to as a Julia native array. Example:
+Setting and getting individual elements of a dataframe or series is slow however, since it requires a round-trip of communication with Python for each operation. Instead, use the ``values`` method to get a version of a series or homogeneous dataframe that requires no copying and is as fast to access and write to as a Julia native array. Example:
 
 ```julia
 >> x_series = Series(randn(10000))
