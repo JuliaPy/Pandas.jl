@@ -1,26 +1,34 @@
+module pandas
+
 using PyCall
 using PyPlot
 
-import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.std, Base.show, Base.merge, Base.convert, Base.hist, Base.join
+import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.std, Base.show, Base.merge, Base.convert, Base.hist, Base.join, Base.replace
 import PyPlot.plot
 
-@pyimport pandas
-np = pyimport("numpy")
+export DataFrame, Iloc, Loc, Ix, Series, MultiIndex, Index, GroupBy
+export mean, std, agg, aggregate, median, var, ohlc, transform, groups, indices, get_group
+export iloc,loc,reset_index,index,head,xs,plot,hist,join,align,drop,drop_duplicates,duplicated,filter,first,idxmax,idxmin,last,reindex,reindex_axis,reindex_like,rename,tail,set_index,select,take,truncate,abs,any,clip,clip_lower,clip_upper,corr,corrwith,count,cov,cummax,cummin,cumprod,cumsum,describe,diff,mean,median,min,mode,pct_change,rank,quantile,sum,skew,var,std,dropna,fillna,replace,delevel,pivot,reodrer_levels,sort,sort_index,sortlevel,swaplevel,stack,unstack,T,boxplot
+export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app
 
+
+np = pyimport("numpy")
+pandas_raw = pyimport("pandas")
+pandas_mod = pywrap(pandas_raw)
 type_map = Dict()
 
-abstract PyWrapped
+abstract PandasWrapped
 
-convert(::Type{PyObject}, x::PyWrapped) = x.pyo
-PyCall.PyObject(x::PyWrapped) = x.pyo
+convert(::Type{PyObject}, x::PandasWrapped) = x.pyo
+PyCall.PyObject(x::PandasWrapped) = x.pyo
 
 macro pytype(name, class)
     quote
-        immutable $(name) <: PyWrapped
+        immutable $(name) <: PandasWrapped
             pyo::PyObject
             $(esc(name))(pyo::PyObject) = new(pyo)
             function $(esc(name))(args...; kwargs...)
-                pandas_method = pandas.$name
+                pandas_method = pandas_mod.$name
                 new(pandas_method(args...; kwargs...))
             end
         end
@@ -30,7 +38,7 @@ end
 
 quot(x) = Expr(:quote, x)
 
-function Base.Array(x::PyWrapped)
+function Base.Array(x::PandasWrapped)
     c = np[:asarray](x)
     if typeof(c).parameters[1] == PyObject
         out = cell(size(x))
@@ -45,6 +53,7 @@ function Base.Array(x::PyWrapped)
     end
 end
 
+values(x::PandasWrapped) = convert(PyArray, x.pyo["values"])
 
 function pandas_wrap(pyo::PyObject)
     for pyt in keys(type_map)
@@ -114,6 +123,19 @@ macro df_pyattrs(methods...)
     Expr(:block, m_exprs...)
 end
 
+macro df_pyattrs_eval(methods...)
+    m_exprs = Expr[]
+    for method in methods
+        push!(m_exprs, quote 
+            function $(esc(method))(df::PandasWrapped, arg)
+                res = pyeval(@sprintf("df.%s('%s')", $method, arg), df=df)
+                pandas_wrap(res)
+            end
+        end)
+    end
+    Expr(:block, m_exprs...)
+end
+
 macro gb_pyattrs(methods...)
     classes = [:GroupBy]
     m_exprs = Expr[]
@@ -137,17 +159,23 @@ macro pyasvec(class, offset)
                 pandas_wrap(pyo)
             end
 
-            function $(esc(:setindex!))(pyt::$class, value, idx)
-                new_idx = fig_arg(idx-1)
+            function $(esc(:setindex!))(pyt::$class, value, idxs...)
+                new_idx = [fix_arg(idx-1) for idx in idxs]
                 pyt.pyo[:__setitem__](tuple(new_idx...), value)
             end
         end
     else
         index_expr = quote  
-            @pyattr $class getindex __getitem__ 
-            function $(esc(:setindex!))(pyt::$class, value, idx)
-                pyt.pyo[:__setitem__](fix_arg(idx), value)
-            end            
+            function $(esc(:getindex))(pyt::$class, args...)
+                new_args = tuple([fix_arg(arg) for arg in args]...)
+                pyo = pyt.pyo[:__getitem__](length(new_args)==1 ? new_args[1] : new_args)
+                pandas_wrap(pyo)
+            end
+
+            function $(esc(:setindex!))(pyt::$class, value, idxs...)
+                new_idx = [fix_arg(idx) for idx in idxs]
+                pyt.pyo[:__setitem__](tuple(new_idx...), value)
+            end
         end
     end
     quote
@@ -157,27 +185,31 @@ macro pyasvec(class, offset)
 end
 
 
-@pytype DataFrame pandas.core[:frame]["DataFrame"]
-@pytype Iloc pandas.core[:indexing]["_iLocIndexer"]
-@pytype Loc pandas.core[:indexing]["_LocIndexer"]
-@pytype Ix pandas.core[:indexing]["_IXIndexer"]
-@pytype Series pandas.core[:series]["Series"]
-@pytype Index pandas.core[:index]["Index"]
-@pytype GroupBy pandas.core[:groupby]["DataFrameGroupBy"]
+@pytype DataFrame pandas_mod.core[:frame]["DataFrame"]
+@pytype Iloc pandas_mod.core[:indexing]["_iLocIndexer"]
+@pytype Loc pandas_mod.core[:indexing]["_LocIndexer"]
+@pytype Ix pandas_mod.core[:indexing]["_IXIndexer"]
+@pytype Series pandas_mod.core[:series]["Series"]
+@pytype MultiIndex pandas_mod.core[:index]["MultiIndex"]
+@pytype Index pandas_mod.core[:index]["Index"]
+@pytype GroupBy pandas_mod.core[:groupby]["DataFrameGroupBy"]
+
 
 @pyattr DataFrame groupby nothing
 @pyattr DataFrame columns nothing
-@pyattr DataFrame query nothing
 @pyattr GroupBy app apply 
+
 
 @gb_pyattrs mean std agg aggregate median var ohlc transform groups indices get_group
 
-@df_pyattrs iloc loc reset_index index head xs to_csv to_pickle plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot
+@df_pyattrs iloc loc reset_index index head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot
 
-Base.size(df::PyWrapped, i::Integer) = size(df)[i]
-Base.size(df::PyWrapped) = df.pyo[:shape]
+@df_pyattrs_eval to_clipboard to_csv to_dense to_dict to_excel to_gbq to_hdf to_html to_json to_latex to_msgpack to_panel to_pickle to_records to_sparse to_sql to_string query
 
-@pyasvec Series true
+Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
+Base.size(df::PandasWrapped) = df.pyo[:shape]
+
+@pyasvec Series false
 @pyasvec Loc false
 @pyasvec Ix false
 @pyasvec Iloc true
@@ -187,45 +219,47 @@ Base.size(df::PyWrapped) = df.pyo[:shape]
 Base.ndims(df::Union(DataFrame, Series)) = length(size(df))
 
 
-for m in [:read_csv, :read_html, :read_json, :save, :stats,  :melt, :rolling_count, :rolling_sum, :rolling_window, :rolling_quantile, :ewma]
-    delegate(m, quote pandas.$m end)
+for m in [:read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :rolling_count, :rolling_sum, :rolling_window, :rolling_quantile, :ewma]
+    delegate(m, quote pandas_mod.$m end)
 end
 
-function show(io::IO, df::DataFrame)
-    if length(df)>10
-        show(io, head(df))
-        return
+function show(io::IO, df::PandasWrapped)
+    s = df.pyo[:__str__]()
+    println(io, s)
+end
+
+function query(df::DataFrame, e::Expr) # This whole method is a terrible hack
+    s = string(e)
+    s = s[3:end-1] 
+    s = replace(s, "&&", "&")
+    s = replace(s, "||", "|")
+    query(df, s)
+end
+
+for m in [:from_arrays, :from_tuples]
+    @eval function $m(args...; kwargs...)
+        pandas_raw["MultiIndex"][$(quot(m))](args...; kwargs...)
     end
-    idx = index(df)
-    cols = columns(df)
-    loc_ = loc(df)
-    print(io, "\t")
-    n_cols = length(cols)
-    n_rows = length(idx)
-    for i=1:n_cols
-        print(io, cols[i], "\t")
-    end
-    println(io)
-    for i=1:n_rows
-        print(io, idx[i], "\t")
-        for j=1:n_cols
-            print(io, loc_[(idx[i], cols[j])], "\t")
+end
+
+for op in [(:+, :__add__), (:*, :__mul__), (:/, :__div__)]
+    @eval begin
+        function $(op[1])(x::PandasWrapped, y::PandasWrapped)
+            f = $(quot(op[2]))
+            py_f = pyeval(string("x.", f), x=x.pyo)
+            res = py_f(y)
+            return pandas_wrap(res)
         end
-        println(io)
+
+        function $(op[1])(x::PandasWrapped, y)
+            f = $(quot(op[2]))
+            py_f = pyeval(string("x.", f), x=x.pyo)
+            res = py_f(y)
+            return pandas_wrap(res)
+        end
+
+        $(op[1])(y, x::PandasWrapped) = $(op[1])(x, y)
     end
 end
 
-function show(io::IO, series::Series)
-    if length(series)>10
-        show(io, head(series))
-        return
-    end
-    idx = index(series)
-    N = length(idx)
-    loc_ = loc(series)
-    for n=1:N
-        print(io, idx[n], "\t")
-        print(io, loc_[idx[n]])
-        println(io)
-    end
 end
