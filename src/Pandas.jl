@@ -9,7 +9,7 @@ import PyPlot.plot
 export DataFrame, Iloc, Loc, Ix, Series, MultiIndex, Index, GroupBy
 export mean, std, agg, aggregate, median, var, ohlc, transform, groups, indices, get_group
 export iloc,loc,reset_index,index,head,xs,plot,hist,join,align,drop,drop_duplicates,duplicated,filter,first,idxmax,idxmin,last,reindex,reindex_axis,reindex_like,rename,tail,set_index,select,take,truncate,abs,any,clip,clip_lower,clip_upper,corr,corrwith,count,cov,cummax,cummin,cumprod,cumsum,describe,diff,mean,median,min,mode,pct_change,rank,quantile,sum,skew,var,std,dropna,fillna,replace,delevel,pivot,reodrer_levels,sort,sort_index,sortlevel,swaplevel,stack,unstack,T,boxplot
-export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app
+export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app, values
 
 
 np = pyimport("numpy")
