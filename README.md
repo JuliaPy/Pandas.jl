@@ -17,8 +17,8 @@ It also comes with the Anaconda and Enthought Python distributions.
 Then in Julia, type
 
 ```
-Pkg.clone("pandas")
-using pandas
+Pkg.clone("Pandas")
+using Pandas
 ```
 
 Usage
