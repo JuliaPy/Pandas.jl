@@ -3,7 +3,7 @@ module Pandas
 using PyCall
 using PyPlot
 
-import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.std, Base.show, Base.merge, Base.convert, Base.hist, Base.join, Base.replace, Base.endof
+import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.std, Base.show, Base.merge, Base.convert, Base.hist, Base.join, Base.replace, Base.endof, Base.start, Base.next, Base.done
 import PyPlot.plot
 
 export DataFrame, Iloc, Loc, Ix, Series, MultiIndex, Index, GroupBy
@@ -11,7 +11,7 @@ export mean, std, agg, aggregate, median, var, ohlc, transform, groups, indices,
 export iloc,loc,reset_index,index,head,xs,plot,hist,join,align,drop,drop_duplicates,duplicated,filter,first,idxmax,idxmin,last,reindex,reindex_axis,reindex_like,rename,tail,set_index,select,take,truncate,abs,any,clip,clip_lower,clip_upper,corr,corrwith,count,cov,cummax,cummin,cumprod,cumsum,describe,diff,mean,median,min,mode,pct_change,rank,quantile,sum,skew,var,std,dropna,fillna,replace,delevel,pivot,reodrer_levels,sort,sort_index,sortlevel,swaplevel,stack,unstack,T,boxplot
 export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app, values, from_arrays, from_tuples
 export read_csv, read_html, read_json, read_excel, read_table, save, stats,  melt, rolling_count, rolling_sum, rolling_window, rolling_quantile, ewma, set_columns, concat
-
+export pivot_table, crosstab, cut, qcut, get_dummies
 
 np = pyimport("numpy")
 pandas_raw = pyimport("pandas")
@@ -33,6 +33,12 @@ macro pytype(name, class)
                 new(pandas_method(args...; kwargs...))
             end
         end
+        $(esc(:start))(x::$name) = start(x.pyo)
+        function $(esc(:next))(x::$name, state)
+            new_val, new_state = next(x.pyo, state)
+            return pandas_wrap(new_val), new_state
+        end
+        $(esc(:done))(x::$name, state) = done(x.pyo, state)
         push!(type_map, ($class, $name))
     end
 end
@@ -64,6 +70,8 @@ function pandas_wrap(pyo::PyObject)
     end
     return convert(PyAny, pyo)
 end
+
+pandas_wrap(x::Union(AbstractArray, Tuple)) = [pandas_wrap(_) for _ in x]
 
 pandas_wrap(pyo) = pyo
 
@@ -227,7 +235,7 @@ Base.size(df::PandasWrapped) = df.pyo[:shape]
 Base.ndims(df::Union(DataFrame, Series)) = length(size(df))
 
 
-for m in [:read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :rolling_count, :rolling_sum, :rolling_window, :rolling_quantile, :ewma, :concat, :merge]
+for m in [:read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :rolling_count, :rolling_sum, :rolling_window, :rolling_quantile, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies]
     delegate(m, quote pandas_mod.$m end)
 end
 
