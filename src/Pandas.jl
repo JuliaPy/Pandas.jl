@@ -10,8 +10,8 @@ export DataFrame, Iloc, Loc, Ix, Series, MultiIndex, Index, GroupBy
 export mean, std, agg, aggregate, median, var, ohlc, transform, groups, indices, get_group
 export iloc,loc,reset_index,index,head,xs,plot,hist,join,align,drop,drop_duplicates,duplicated,filter,first,idxmax,idxmin,last,reindex,reindex_axis,reindex_like,rename,tail,set_index,select,take,truncate,abs,any,clip,clip_lower,clip_upper,corr,corrwith,count,cov,cummax,cummin,cumprod,cumsum,describe,diff,mean,median,min,mode,pct_change,rank,quantile,sum,skew,var,std,dropna,fillna,replace,delevel,pivot,reodrer_levels,sort,sort_index,sortlevel,swaplevel,stack,unstack,T,boxplot
 export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app, values, from_arrays, from_tuples
-export read_csv, read_html, read_json, read_excel, read_table, save, stats,  melt, rolling_count, rolling_sum, rolling_window, rolling_quantile, ewma, set_columns, concat
-export pivot_table, crosstab, cut, qcut, get_dummies, delete_column
+export read_csv, read_html, read_json, read_excel, read_table, save, stats,  melt, rolling_count, rolling_sum, rolling_window, rolling_quantile, ewma, setcolumns!, concat, read_pickle
+export pivot_table, crosstab, cut, qcut, get_dummies, deletecolumn!, siz, name, setname!
 
 np = pyimport("numpy")
 pandas_raw = pyimport("pandas")
@@ -137,7 +137,7 @@ macro df_pyattrs_eval(methods...)
     for method in methods
         push!(m_exprs, quote 
             function $(esc(method))(df::PandasWrapped, arg)
-                res = pyeval(@sprintf("df.%s('%s')", $method, arg), df=df)
+                res = pyeval(@sprintf("df.%s(\"%s\")", $method, arg), df=df)
                 pandas_wrap(res)
             end
         end)
@@ -228,7 +228,9 @@ end
 @pyattr GroupBy app apply 
 
 
-@gb_pyattrs mean std agg aggregate median var ohlc transform groups indices get_group hist plot
+@gb_pyattrs mean std agg aggregate median var ohlc transform groups indices get_group hist plot count
+
+siz(gb::GroupBy) = gb.pyo[:size]()
 
 @df_pyattrs iloc loc reset_index index head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot
 
@@ -249,7 +251,7 @@ Base.size(df::PandasWrapped) = df.pyo[:shape]
 Base.ndims(df::Union(DataFrame, Series)) = length(size(df))
 
 
-for m in [:read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :rolling_count, :rolling_sum, :rolling_window, :rolling_quantile, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies]
+for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :rolling_count, :rolling_sum, :rolling_window, :rolling_quantile, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies]
     delegate(m, quote pandas_mod.$m end)
 end
 
@@ -274,7 +276,7 @@ for m in [:from_arrays, :from_tuples]
     end
 end
 
-for op in [(:+, :__add__), (:*, :__mul__), (:/, :__div__)]
+for op in [(:+, :__add__), (:*, :__mul__), (:/, :__div__), (:-, :__sub__)]
     @eval begin
         function $(op[1])(x::PandasWrapped, y::PandasWrapped)
             f = $(quot(op[2]))
@@ -294,12 +296,21 @@ for op in [(:+, :__add__), (:*, :__mul__), (:/, :__div__)]
     end
 end
 
-function set_columns(df::PandasWrapped, new_columns)
+for op in [(:-, :__neg__)]
+    @eval begin
+        $(op[1])(x::PandasWrapped) = pandas_wrap(x.pyo[$(quot(op[2]))]())
+    end
+end
+
+function setcolumns!(df::PandasWrapped, new_columns)
     df.pyo[:__setattr__]("columns", new_columns)
 end
 
-function delete_column(df::DataFrame, column)
+function deletecolumn!(df::DataFrame, column)
     df.pyo[:__delitem__](column)
 end
+
+name(s::Series) = s.pyo[:name]
+setname!(s::Series, name) = s.pyo[:name] = name
 
 end

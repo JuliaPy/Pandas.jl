@@ -69,7 +69,7 @@ Name: age, dtype: int64
 
 [2 rows x 2 columns]
 
->> mean(groupby(df3, "age"))
+>> mean(groupby(df3, "age")) #Or groupby(df, "age3") |> mean
      income
 age        
 27       73
