@@ -3,7 +3,7 @@ module Pandas
 using PyCall
 using PyPlot
 
-import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.std, Base.show, Base.merge, Base.convert, Base.hist, Base.join, Base.replace, Base.endof, Base.start, Base.next, Base.done
+import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.std, Base.show, Base.merge, Base.convert, Base.hist, Base.join, Base.replace, Base.endof, Base.start, Base.next, Base.done, Base.sum, Base.var
 import PyPlot.plot
 
 export DataFrame, Iloc, Loc, Ix, Series, MultiIndex, Index, GroupBy
@@ -12,6 +12,9 @@ export iloc,loc,reset_index,index,head,xs,plot,hist,join,align,drop,drop_duplica
 export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app, values, from_arrays, from_tuples
 export read_csv, read_html, read_json, read_excel, read_table, save, stats,  melt, rolling_count, rolling_sum, rolling_window, rolling_quantile, ewma, setcolumns!, concat, read_pickle
 export pivot_table, crosstab, cut, qcut, get_dummies, deletecolumn!, siz, name, setname!
+export argsort,order,asfreq,asof,shift,first_valid_index,last_valid_index,weekday,resample,tz_conert,tz_localize
+export resample,date_range,to_datetime,to_timedelta,bdate_range,period_range,ewma,ewmstd,ewmvar,ewmcorr,ewmcov
+export rolling_count, expanding_count, rolling_sum, expanding_sum, rolling_mean, expanding_mean, rolling_median, expanding_median, rolling_var, expanding_var, rolling_std, expanding_std, rolling_min, expanding_min, rolling_max, expanding_max, rolling_corr, expanding_corr, rolling_corr_pairwise, expanding_corr_pairwise, rolling_cov, expanding_cov, rolling_skew, expanding_skew, rolling_kurt, expanding_kurt, rolling_apply, expanding_apply, rolling_quantile, expanding_quantile
 
 np = pyimport("numpy")
 pandas_raw = pyimport("pandas")
@@ -232,7 +235,7 @@ end
 
 siz(gb::GroupBy) = gb.pyo[:size]()
 
-@df_pyattrs iloc loc reset_index index head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot
+@df_pyattrs iloc loc reset_index index head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot argsort order asfreq asof shift first_valid_index last_valid_index weekday resample tz_conert tz_localize
 
 @df_pyattrs_eval to_clipboard to_csv to_dense to_dict to_excel to_gbq to_hdf to_html to_json to_latex to_msgpack to_panel to_pickle to_records to_sparse to_sql to_string query
 
@@ -251,9 +254,16 @@ Base.size(df::PandasWrapped) = df.pyo[:shape]
 Base.ndims(df::Union(DataFrame, Series)) = length(size(df))
 
 
-for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :rolling_count, :rolling_sum, :rolling_window, :rolling_quantile, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies]
+for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies, :resample, :date_range, :to_datetime, :to_timedelta, :bdate_range, :period_range, :ewma, :ewmstd, :ewmvar, :ewmcorr, :ewmcov, :rolling_count, :expanding_count, :rolling_sum, :expanding_sum, :rolling_mean, :expanding_mean, :rolling_median, :expanding_median, :rolling_var, :expanding_var, :rolling_std, :expanding_std, :rolling_min, :expanding_min, :rolling_max, :expanding_max, :rolling_corr, :expanding_corr, :rolling_corr_pairwise, :expanding_corr_pairwise, :rolling_cov, :expanding_cov, :rolling_skew, :expanding_skew, :rolling_kurt, :expanding_kurt, :rolling_apply, :expanding_apply, :rolling_quantile, :expanding_quantile, :rolling_window]
     delegate(m, quote pandas_mod.$m end)
 end
+
+# for m in ["count", "sum", "mean", "median", "var", "std", "min", "max", "corr", "corr_pairwise", "cov", "skew", "kurt", "apply", "quantile"]
+#     for f in ["rolling", "expanding"]
+#         s = symbol(string(f, "_", m))
+#         delegate(m, quote pandas_mod.$s end)
+#     end
+# end
 
 function show(io::IO, df::PandasWrapped)
     s = df.pyo[:__str__]()
