@@ -19,7 +19,7 @@ export rolling_count, expanding_count, rolling_sum, expanding_sum, rolling_mean,
 np = pyimport("numpy")
 pandas_raw = pyimport("pandas")
 pandas_mod = pywrap(pandas_raw)
-type_map = {}
+type_map = []
 
 abstract PandasWrapped
 
@@ -63,7 +63,7 @@ function Base.Array(x::PandasWrapped)
     end
 end
 
-values(x::PandasWrapped) = convert(PyArray, x.pyo["values"])
+Base.values(x::PandasWrapped) = convert(PyArray, x.pyo["values"])
 
 function pandas_wrap(pyo::PyObject)
     for (pyt, pyv) in type_map
@@ -78,7 +78,7 @@ pandas_wrap(x::Union(AbstractArray, Tuple)) = [pandas_wrap(_) for _ in x]
 
 pandas_wrap(pyo) = pyo
 
-fix_arg(x::Range1) = pyeval(@sprintf "slice(%d, %d)" x.start x.start+x.len)
+#fix_arg(x::Range1) = pyeval(@sprintf "slice(%d, %d)" x.start x.start+x.len)
 fix_arg(x::Range) = pyeval(@sprintf "slice(%d, %d, %d)" x.start x.start+x.len*x.step x.step)
 fix_arg(x) = x
 
@@ -138,7 +138,7 @@ end
 macro df_pyattrs_eval(methods...)
     m_exprs = Expr[]
     for method in methods
-        push!(m_exprs, quote 
+        push!(m_exprs, quote
             function $(esc(method))(df::PandasWrapped, arg)
                 res = pyeval(@sprintf("df.%s(\"%s\")", $method, arg), df=df)
                 pandas_wrap(res)
@@ -164,7 +164,7 @@ end
 macro pyasvec(class, offset)
     offset = eval(offset)
     if offset
-        index_expr = quote 
+        index_expr = quote
             function $(esc(:getindex))(pyt::$class, args...)
                 new_args = tuple([fix_arg(arg-1) for arg in args]...)
                 pyo = pyt.pyo[:__getitem__](length(new_args)==1 ? new_args[1] : new_args)
@@ -177,7 +177,7 @@ macro pyasvec(class, offset)
             end
         end
     else
-        index_expr = quote  
+        index_expr = quote
             function $(esc(:getindex))(pyt::$class, args...)
                 new_args = tuple([fix_arg(arg) for arg in args]...)
                 pyo = pyt.pyo[:__getitem__](length(new_args)==1 ? new_args[1] : new_args)
@@ -228,7 +228,7 @@ end
 
 @pyattr DataFrame groupby nothing
 @pyattr DataFrame columns nothing
-@pyattr GroupBy app apply 
+@pyattr GroupBy app apply
 
 
 @gb_pyattrs mean std agg aggregate median var ohlc transform groups indices get_group hist plot count
@@ -272,7 +272,7 @@ end
 
 function query(df::DataFrame, e::Expr) # This whole method is a terrible hack
     s = string(e)
-    s = s[3:end-1] 
+    s = s[3:end-1]
     s = replace(s, "&&", "&")
     s = replace(s, "||", "|")
     query(df, s)
