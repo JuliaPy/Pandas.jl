@@ -74,7 +74,7 @@ function pandas_wrap(pyo::PyObject)
     return convert(PyAny, pyo)
 end
 
-pandas_wrap(x::Union(AbstractArray, Tuple)) = [pandas_wrap(_) for _ in x]
+pandas_wrap(x::Union{AbstractArray, Tuple}) = [pandas_wrap(_) for _ in x]
 
 pandas_wrap(pyo) = pyo
 
@@ -239,7 +239,7 @@ siz(gb::GroupBy) = gb.pyo[:size]()
 
 @df_pyattrs_eval to_clipboard to_csv to_dense to_dict to_excel to_gbq to_hdf to_html to_json to_latex to_msgpack to_panel to_pickle to_records to_sparse to_sql to_string query
 
-Base.size(x::Union(Loc, Iloc, Ix)) = x.pyo[:obj][:shape]
+Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
 Base.size(df::PandasWrapped) = df.pyo[:shape]
 
@@ -251,7 +251,7 @@ Base.size(df::PandasWrapped) = df.pyo[:shape]
 @pyasvec Index true
 @pyasvec GroupBy false
 
-Base.ndims(df::Union(DataFrame, Series)) = length(size(df))
+Base.ndims(df::Union{DataFrame, Series}) = length(size(df))
 
 
 for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies, :resample, :date_range, :to_datetime, :to_timedelta, :bdate_range, :period_range, :ewma, :ewmstd, :ewmvar, :ewmcorr, :ewmcov, :rolling_count, :expanding_count, :rolling_sum, :expanding_sum, :rolling_mean, :expanding_mean, :rolling_median, :expanding_median, :rolling_var, :expanding_var, :rolling_std, :expanding_std, :rolling_min, :expanding_min, :rolling_max, :expanding_max, :rolling_corr, :expanding_corr, :rolling_corr_pairwise, :expanding_corr_pairwise, :rolling_cov, :expanding_cov, :rolling_skew, :expanding_skew, :rolling_kurt, :expanding_kurt, :rolling_apply, :expanding_apply, :rolling_quantile, :expanding_quantile, :rolling_window]
