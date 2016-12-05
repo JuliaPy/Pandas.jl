@@ -4,6 +4,11 @@ using PyCall
 using PyPlot
 
 import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.std, Base.show, Base.merge, Base.convert, Base.hist, Base.join, Base.replace, Base.endof, Base.start, Base.next, Base.done, Base.sum, Base.var
+
+import Base: abs, any, count, cov, cummax, cummin, cumprod, cumsum, diff, drop, filter, first, indices, last, median, min, quantile, rank, select, sort, take, truncate
+
+import Base: +, -, *, /
+
 import PyPlot.plot
 
 export DataFrame, Iloc, Loc, Ix, Series, MultiIndex, Index, GroupBy
@@ -254,7 +259,7 @@ Base.size(df::PandasWrapped) = df.pyo[:shape]
 Base.ndims(df::Union{DataFrame, Series}) = length(size(df))
 
 
-for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies, :resample, :date_range, :to_datetime, :to_timedelta, :bdate_range, :period_range, :ewma, :ewmstd, :ewmvar, :ewmcorr, :ewmcov, :rolling_count, :expanding_count, :rolling_sum, :expanding_sum, :rolling_mean, :expanding_mean, :rolling_median, :expanding_median, :rolling_var, :expanding_var, :rolling_std, :expanding_std, :rolling_min, :expanding_min, :rolling_max, :expanding_max, :rolling_corr, :expanding_corr, :rolling_corr_pairwise, :expanding_corr_pairwise, :rolling_cov, :expanding_cov, :rolling_skew, :expanding_skew, :rolling_kurt, :expanding_kurt, :rolling_apply, :expanding_apply, :rolling_quantile, :expanding_quantile, :rolling_window]
+for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies, :resample, :date_range, :to_datetime, :to_timedelta, :bdate_range, :period_range, :ewmstd, :ewmvar, :ewmcorr, :ewmcov, :rolling_count, :expanding_count, :rolling_sum, :expanding_sum, :rolling_mean, :expanding_mean, :rolling_median, :expanding_median, :rolling_var, :expanding_var, :rolling_std, :expanding_std, :rolling_min, :expanding_min, :rolling_max, :expanding_max, :rolling_corr, :expanding_corr, :rolling_corr_pairwise, :expanding_corr_pairwise, :rolling_cov, :expanding_cov, :rolling_skew, :expanding_skew, :rolling_kurt, :expanding_kurt, :rolling_apply, :expanding_apply, :rolling_quantile, :expanding_quantile, :rolling_window]
     delegate(m, quote pandas_mod.$m end)
 end
 
