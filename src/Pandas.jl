@@ -97,7 +97,7 @@ function pyattr(class, method, orig_method)
     quote
         function $(esc(method))(pyt::$class, args...; kwargs...)
             pyo = pyt.pyo[string($m_quote)]
-            if pytype_query(pyo) == Function
+            if true #isa(pytype_query(pyo), Function)
                 new_args = [fix_arg(arg) for arg in args]
                 pyo = pyt.pyo[$m_quote](new_args...; kwargs...)
             else
