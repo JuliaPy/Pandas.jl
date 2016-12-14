@@ -1,13 +1,15 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
+sudo: required
 os:
-  - osx
   - linux
 julia:
   - 0.4
-  - nightly
+  - 0.5
 notifications:
   email: false
+before_install:
+  - (sudo apt-get -qq update && sudo apt-get install -y python python-pip && sudo pip install pandas && sudo pip install matplotlib)
 script:
     - julia -e 'Pkg.clone(pwd())'
     - julia -e 'Pkg.build("Pandas")'
