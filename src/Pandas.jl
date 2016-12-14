@@ -84,7 +84,8 @@ pandas_wrap(x::Union{AbstractArray, Tuple}) = [pandas_wrap(_) for _ in x]
 pandas_wrap(pyo) = pyo
 
 #fix_arg(x::Range1) = pyeval(@sprintf "slice(%d, %d)" x.start x.start+x.len)
-fix_arg(x::Range) = pyeval(@sprintf "slice(%d, %d, %d)" x.start x.start+x.len*x.step x.step)
+fix_arg(x::StepRange) = pyeval(@sprintf "slice(%d, %d, %d)" x.start x.start+length(x)*x.step x.step)
+fix_arg(x::UnitRange) = fix_arg(StepRange(x.start, 1, x.stop))
 fix_arg(x) = x
 
 function pyattr(class, method, orig_method)
@@ -327,5 +328,13 @@ end
 
 name(s::Series) = s.pyo[:name]
 setname!(s::Series, name) = s.pyo[:name] = name
+
+import Base: .==, .>, .<, .>=, .<=, .!=
+
+for (op, pyop) in [(:.==, :__eq__), (:.>, :__gt__), (:.<, :__lt__), (:.>=, :__ge__), (:.<=, :__le__), (:.!=, :__ne__)]
+    @eval function $op(s::PandasWrapped, x)
+        pandas_wrap(s.pyo[$(QuoteNode(pyop))](x))
+    end
+end
 
 end
