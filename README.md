@@ -26,7 +26,7 @@ Usage
 In general, if ``df`` is a Pandas object (such as a dataframe or series), then the Python command ``df.x(y, w=z)`` becomes ``x(df, y, w=z)`` in Julia. ``df.loc[a,b,c]`` becomes ``loc(df)[a,b,c]`` (same for ``iloc`` and ``ix``). Example:
 
 ```julia
->> using pandas
+>> using Pandas
 >> df = DataFrame([:age=>[27, 29, 27], :name=>["James", "Jill", "Jake"]])
    age   name
 0   27  James
@@ -103,7 +103,7 @@ to_json(df, "my_json_file.json")
 
 Performance
 ------------
-Most Pandas operations on medium to large dataframes are very fast, since the overhead of calling into the Python API is small compared to the time spent inside Pandas' highly efficient C implementation. 
+Most Pandas operations on medium to large dataframes are very fast, since the overhead of calling into the Python API is small compared to the time spent inside Pandas' highly efficient C implementation.
 
 Setting and getting individual elements of a dataframe or series is slow however, since it requires a round-trip of communication with Python for each operation. Instead, use the ``values`` method to get a version of a series or homogeneous dataframe that requires no copying and is as fast to access and write to as a Julia native array. Example:
 
@@ -132,4 +132,3 @@ Changes to the values(...) array propogate back to the underlying series/datafra
 Caveats
 ----------
 Panels-related functions are still unwrapped, as well as a few other obscure functions. Note that even if a function is not wrapped explicitly, it can still be called using various methods from [PyCall](https://github.com/stevengj/PyCall.jl).
-
