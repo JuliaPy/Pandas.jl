@@ -1,7 +1,9 @@
+__precompile__(true)
 module Pandas
 
 using PyCall
 using PyPlot
+using Lazy
 
 import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.std, Base.show, Base.merge, Base.convert, Base.hist, Base.join, Base.replace, Base.endof, Base.start, Base.next, Base.done, Base.sum, Base.var
 
@@ -13,18 +15,32 @@ import PyPlot.plot
 
 export DataFrame, Iloc, Loc, Ix, Series, MultiIndex, Index, GroupBy
 export mean, std, agg, aggregate, median, var, ohlc, transform, groups, indices, get_group
-export iloc,loc,reset_index,index,head,xs,plot,hist,join,align,drop,drop_duplicates,duplicated,filter,first,idxmax,idxmin,last,reindex,reindex_axis,reindex_like,rename,tail,set_index,select,take,truncate,abs,any,clip,clip_lower,clip_upper,corr,corrwith,count,cov,cummax,cummin,cumprod,cumsum,describe,diff,mean,median,min,mode,pct_change,rank,quantile,sum,skew,var,std,dropna,fillna,replace,delevel,pivot,reodrer_levels,sort,sort_index,sortlevel,swaplevel,stack,unstack,T,boxplot
+export iloc,loc,reset_index,index,head,xs,plot,hist,join,align,drop,drop_duplicates,duplicated,filter,first,idxmax,idxmin,last,reindex,reindex_axis,reindex_like,rename,tail,set_index,select,take,truncate,abs,any,clip,clip_lower,clip_upper,corr,corrwith,count,cov,cummax,cummin,cumprod,cumsum,describe,diff,mean,median,min,mode,pct_change,rank,quantile,sum,skew,var,std,dropna,fillna,replace,delevel,pivot,reodrer_levels,sort,sort_index,sortlevel,swaplevel,stack,unstack,T, to_numeric, isin
 export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app, values, from_arrays, from_tuples
 export read_csv, read_html, read_json, read_excel, read_table, save, stats,  melt, rolling_count, rolling_sum, rolling_window, rolling_quantile, ewma, setcolumns!, concat, read_pickle
 export pivot_table, crosstab, cut, qcut, get_dummies, deletecolumn!, siz, name, setname!
 export argsort,order,asfreq,asof,shift,first_valid_index,last_valid_index,weekday,resample,tz_conert,tz_localize
 export resample,date_range,to_datetime,to_timedelta,bdate_range,period_range,ewma,ewmstd,ewmvar,ewmcorr,ewmcov
 export rolling_count, expanding_count, rolling_sum, expanding_sum, rolling_mean, expanding_mean, rolling_median, expanding_median, rolling_var, expanding_var, rolling_std, expanding_std, rolling_min, expanding_min, rolling_max, expanding_max, rolling_corr, expanding_corr, rolling_corr_pairwise, expanding_corr_pairwise, rolling_cov, expanding_cov, rolling_skew, expanding_skew, rolling_kurt, expanding_kurt, rolling_apply, expanding_apply, rolling_quantile, expanding_quantile
+export @>
 
-np = pyimport("numpy")
-pandas_raw = pyimport("pandas")
-pandas_mod = pywrap(pandas_raw)
-type_map = []
+# np = pyimport("numpy")
+# pandas_raw = pyimport("pandas")
+# pandas_mod = pywrap(pandas_raw)
+
+const np = PyNULL()
+const pandas_raw = PyNULL()
+
+function __init__()
+    copy!(np, pyimport_conda("numpy", "numpy"))
+    copy!(pandas_raw, pyimport_conda("pandas", "pandas"))
+    for (pandas_expr, julia_type) in pre_type_map
+        push!(type_map, (pandas_expr(), julia_type))
+    end
+end
+
+const pre_type_map = []
+const type_map = []
 
 abstract PandasWrapped
 
@@ -37,7 +53,7 @@ macro pytype(name, class)
             pyo::PyObject
             $(esc(name))(pyo::PyObject) = new(pyo)
             function $(esc(name))(args...; kwargs...)
-                pandas_method = pandas_mod.$name
+                pandas_method = ($class)()
                 new(pandas_method(args...; kwargs...))
             end
         end
@@ -47,7 +63,7 @@ macro pytype(name, class)
             return pandas_wrap(new_val), new_state
         end
         $(esc(:done))(x::$name, state) = done(x.pyo, state)
-        push!(type_map, ($class, $name))
+        push!(pre_type_map, ($class, $name))
     end
 end
 
@@ -57,10 +73,8 @@ function Base.Array(x::PandasWrapped)
     c = np[:asarray](x)
     if typeof(c).parameters[1] == PyObject
         out = Array{Any}(size(x))
-        for row=1:size(x,1)
-            for col=1:size(x,2)
-                out[row, col] = convert(PyAny, c[row, col])
-            end
+        for idx in eachindex(out)
+            out[idx] = convert(PyAny, c[idx])
         end
         out
     else
@@ -68,7 +82,14 @@ function Base.Array(x::PandasWrapped)
     end
 end
 
-Base.values(x::PandasWrapped) = convert(PyArray, x.pyo["values"])
+
+#Base.values(x::PandasWrapped) = convert(PyArray, x.pyo["values"])
+
+function Base.values(x::PandasWrapped)
+    pyarray = convert(PyArray, x.pyo["values"])
+    unsafe_wrap(Array, pyarray.data, size(pyarray))
+end
+
 
 function pandas_wrap(pyo::PyObject)
     for (pyt, pyv) in type_map
@@ -97,7 +118,7 @@ function pyattr(class, method, orig_method)
     quote
         function $(esc(method))(pyt::$class, args...; kwargs...)
             pyo = pyt.pyo[string($m_quote)]
-            if true #isa(pytype_query(pyo), Function)
+            if true#isa(pytype_query(pyo), Function)
                 new_args = [fix_arg(arg) for arg in args]
                 pyo = pyt.pyo[$m_quote](new_args...; kwargs...)
             else
@@ -221,15 +242,15 @@ macro pyasvec(class, offset)
 end
 
 
-@pytype DataFrame pandas_mod.core[:frame]["DataFrame"]
-@pytype Iloc pandas_mod.core[:indexing]["_iLocIndexer"]
-@pytype Loc pandas_mod.core[:indexing]["_LocIndexer"]
-@pytype Ix pandas_mod.core[:indexing]["_IXIndexer"]
-@pytype Series pandas_mod.core[:series]["Series"]
-@pytype MultiIndex pandas_mod.core[:index]["MultiIndex"]
-@pytype Index pandas_mod.core[:index]["Index"]
-@pytype GroupBy pandas_mod.core[:groupby]["DataFrameGroupBy"]
-@pytype SeriesGroupBy pandas_mod.core[:groupby]["SeriesGroupBy"]
+@pytype DataFrame ()->pandas_raw[:core][:frame]["DataFrame"]
+@pytype Iloc ()->pandas_raw[:core][:indexing]["_iLocIndexer"]
+@pytype Loc ()->pandas_raw[:core][:indexing]["_LocIndexer"]
+@pytype Ix ()->pandas_raw[:core][:indexing]["_IXIndexer"]
+@pytype Series ()->pandas_raw[:core][:series]["Series"]
+@pytype MultiIndex ()->pandas_raw[:core][:index]["MultiIndex"]
+@pytype Index ()->pandas_raw[:core][:index]["Index"]
+@pytype GroupBy ()->pandas_raw[:core][:groupby]["DataFrameGroupBy"]
+@pytype SeriesGroupBy ()->pandas_raw[:core][:groupby]["SeriesGroupBy"]
 
 
 @pyattr DataFrame groupby nothing
@@ -241,7 +262,11 @@ end
 
 siz(gb::GroupBy) = gb.pyo[:size]()
 
-@df_pyattrs iloc loc reset_index index head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot argsort order asfreq asof shift first_valid_index last_valid_index weekday resample tz_conert tz_localize
+function index(df::PandasWrapped)
+    pandas_wrap(df.pyo[:index])
+end
+
+@df_pyattrs iloc loc reset_index  head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot argsort order asfreq asof shift first_valid_index last_valid_index weekday resample tz_conert tz_localize isin
 
 @df_pyattrs_eval to_clipboard to_csv to_dense to_dict to_excel to_gbq to_hdf to_html to_json to_latex to_msgpack to_panel to_pickle to_records to_sparse to_sql to_string query
 
@@ -260,8 +285,8 @@ Base.size(df::PandasWrapped) = df.pyo[:shape]
 Base.ndims(df::Union{DataFrame, Series}) = length(size(df))
 
 
-for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies, :resample, :date_range, :to_datetime, :to_timedelta, :bdate_range, :period_range, :ewmstd, :ewmvar, :ewmcorr, :ewmcov, :rolling_count, :expanding_count, :rolling_sum, :expanding_sum, :rolling_mean, :expanding_mean, :rolling_median, :expanding_median, :rolling_var, :expanding_var, :rolling_std, :expanding_std, :rolling_min, :expanding_min, :rolling_max, :expanding_max, :rolling_corr, :expanding_corr, :rolling_corr_pairwise, :expanding_corr_pairwise, :rolling_cov, :expanding_cov, :rolling_skew, :expanding_skew, :rolling_kurt, :expanding_kurt, :rolling_apply, :expanding_apply, :rolling_quantile, :expanding_quantile, :rolling_window]
-    delegate(m, quote pandas_mod.$m end)
+for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies, :resample, :date_range, :to_datetime, :to_timedelta, :bdate_range, :period_range, :ewmstd, :ewmvar, :ewmcorr, :ewmcov, :rolling_count, :expanding_count, :rolling_sum, :expanding_sum, :rolling_mean, :expanding_mean, :rolling_median, :expanding_median, :rolling_var, :expanding_var, :rolling_std, :expanding_std, :rolling_min, :expanding_min, :rolling_max, :expanding_max, :rolling_corr, :expanding_corr, :rolling_corr_pairwise, :expanding_corr_pairwise, :rolling_cov, :expanding_cov, :rolling_skew, :expanding_skew, :rolling_kurt, :expanding_kurt, :rolling_apply, :expanding_apply, :rolling_quantile, :expanding_quantile, :rolling_window, :to_numeric]
+    delegate(m, quote pandas_raw[$(quot(m))] end)
 end
 
 # for m in ["count", "sum", "mean", "median", "var", "std", "min", "max", "corr", "corr_pairwise", "cov", "skew", "kurt", "apply", "quantile"]
@@ -335,6 +360,10 @@ for (op, pyop) in [(:.==, :__eq__), (:.>, :__gt__), (:.<, :__lt__), (:.>=, :__ge
     @eval function $op(s::PandasWrapped, x)
         pandas_wrap(s.pyo[$(QuoteNode(pyop))](x))
     end
+end
+
+function DataFrame(pairs::Pair...)
+    DataFrame(Dict(pairs...))
 end
 
 end
