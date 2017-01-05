@@ -22,7 +22,7 @@ export pivot_table, crosstab, cut, qcut, get_dummies, deletecolumn!, siz, name, 
 export argsort,order,asfreq,asof,shift,first_valid_index,last_valid_index,weekday,resample,tz_conert,tz_localize
 export resample,date_range,to_datetime,to_timedelta,bdate_range,period_range,ewma,ewmstd,ewmvar,ewmcorr,ewmcov
 export rolling_count, expanding_count, rolling_sum, expanding_sum, rolling_mean, expanding_mean, rolling_median, expanding_median, rolling_var, expanding_var, rolling_std, expanding_std, rolling_min, expanding_min, rolling_max, expanding_max, rolling_corr, expanding_corr, rolling_corr_pairwise, expanding_corr_pairwise, rolling_cov, expanding_cov, rolling_skew, expanding_skew, rolling_kurt, expanding_kurt, rolling_apply, expanding_apply, rolling_quantile, expanding_quantile, index!, sample
-export @>
+export @>, @query
 
 # np = pyimport("numpy")
 # pandas_raw = pyimport("pandas")
@@ -170,18 +170,7 @@ macro df_pyattrs(methods...)
     Expr(:block, m_exprs...)
 end
 
-macro df_pyattrs_eval(methods...)
-    m_exprs = Expr[]
-    for method in methods
-        push!(m_exprs, quote
-            function $(esc(method))(df::PandasWrapped, arg)
-                res = pyeval(@sprintf("df.%s(\"%s\")", $method, arg), df=df)
-                pandas_wrap(res)
-            end
-        end)
-    end
-    Expr(:block, m_exprs...)
-end
+
 
 macro gb_pyattrs(methods...)
     classes = [:GroupBy, :SeriesGroupBy]
@@ -262,9 +251,8 @@ function index(df::PandasWrapped)
     pandas_wrap(df.pyo[:index])
 end
 
-@df_pyattrs iloc loc reset_index  head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot argsort order asfreq asof shift first_valid_index last_valid_index weekday resample tz_conert tz_localize isin sample
+@df_pyattrs iloc loc reset_index  head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot argsort order asfreq asof shift first_valid_index last_valid_index weekday resample tz_conert tz_localize isin sample to_clipboard to_csv to_dense to_dict to_excel to_gbq to_hdf to_html to_json to_latex to_msgpack to_panel to_pickle to_records to_sparse to_sql to_string query
 
-@df_pyattrs_eval to_clipboard to_csv to_dense to_dict to_excel to_gbq to_hdf to_html to_json to_latex to_msgpack to_panel to_pickle to_records to_sparse to_sql to_string query
 
 Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
@@ -309,12 +297,24 @@ function show(io::IO, df::PandasWrapped)
     println(io, s)
 end
 
+function query(df::DataFrame, s::AbstractString)
+    pandas_wrap(pyeval("df.query(s)", df=df, s=s))
+end
+
 function query(df::DataFrame, e::Expr) # This whole method is a terrible hack
     s = string(e)
-    s = s[3:end-1]
     s = replace(s, "&&", "&")
     s = replace(s, "||", "|")
+    s = replace(s, "∈", "==")
+    s = replace(s, "!", "~")
+    @show s
     query(df, s)
+end
+
+macro query(df, e)
+    quote
+        query($df, $(QuoteNode(e)))
+    end
 end
 
 for m in [:from_arrays, :from_tuples]
