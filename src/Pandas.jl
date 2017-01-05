@@ -109,6 +109,14 @@ fix_arg(x::StepRange) = pyeval(@sprintf "slice(%d, %d, %d)" x.start x.start+leng
 fix_arg(x::UnitRange) = fix_arg(StepRange(x.start, 1, x.stop))
 fix_arg(x) = x
 
+function fix_arg(x, offset)
+    if offset
+        fix_arg(x-1)
+    else
+        fix_arg(x)
+    end
+end
+
 function pyattr(class, method, orig_method)
     if orig_method == :nothing
         m_quote = quot(method)
@@ -188,39 +196,27 @@ macro gb_pyattrs(methods...)
     Expr(:block, m_exprs...)
 end
 
-macro pyasvec(class, offset)
-    offset = eval(offset)
-    if offset
-        index_expr = quote
-            function $(esc(:getindex))(pyt::$class, args...)
-                new_args = tuple([fix_arg(arg-1) for arg in args]...)
-                pyo = pyt.pyo[:__getitem__](length(new_args)==1 ? new_args[1] : new_args)
-                pandas_wrap(pyo)
-            end
+macro pyasvec(class)
 
-            function $(esc(:setindex!))(pyt::$class, value, idxs...)
-                new_idx = [fix_arg(idx-1) for idx in idxs]
-                pyt.pyo[:__setitem__](tuple(new_idx...), value)
-            end
+    index_expr = quote
+        function $(esc(:getindex))(pyt::$class, args...)
+            offset = should_offset(pyt, args...)
+            new_args = tuple([fix_arg(arg, offset) for arg in args]...)
+            pyo = pyt.pyo[:__getitem__](length(new_args)==1 ? new_args[1] : new_args)
+            pandas_wrap(pyo)
         end
-    else
-        index_expr = quote
-            function $(esc(:getindex))(pyt::$class, args...)
-                new_args = tuple([fix_arg(arg) for arg in args]...)
-                pyo = pyt.pyo[:__getitem__](length(new_args)==1 ? new_args[1] : new_args)
-                pandas_wrap(pyo)
-            end
 
-            function $(esc(:setindex!))(pyt::$class, value, idxs...)
-                new_idx = [fix_arg(idx) for idx in idxs]
-                if length(new_idx) > 1
-                    pyt.pyo[:__setitem__](tuple(new_idx...), value)
-                else
-                    pyt.pyo[:__setitem__](new_idx[1], value)
-                end
+        function $(esc(:setindex!))(pyt::$class, value, idxs...)
+            offset = should_offset(pyt, args...)
+            new_idx = [fix_arg(idx, offset) for idx in idxs]
+            if length(new_idx) > 1
+                pyt.pyo[:__setitem__](tuple(new_idx...), value)
+            else
+                pyt.pyo[:__setitem__](new_idx[1], value)
             end
         end
     end
+
     if class in [:Iloc, :Loc, :Ix]
         length_expr = quote
             function $(esc(:length))(x::$class)
@@ -274,13 +270,25 @@ Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
 Base.size(df::PandasWrapped) = df.pyo[:shape]
 
-@pyasvec Series false
-@pyasvec Loc false
-@pyasvec Ix false
-@pyasvec Iloc true
-@pyasvec DataFrame false
-@pyasvec Index true
-@pyasvec GroupBy false
+should_offset(::Any, args...) = false
+should_offset(::Union{Iloc, Index}, args...) = true
+
+function should_offset(s::Series, arg)
+    if eltype(arg) == Int64
+        if eltype(index(s)) ≠ Int64
+            return true
+        end
+    end
+    false
+end
+
+@pyasvec Series
+@pyasvec Loc
+@pyasvec Ix
+@pyasvec Iloc
+@pyasvec DataFrame
+@pyasvec Index
+@pyasvec GroupBy
 
 Base.ndims(df::Union{DataFrame, Series}) = length(size(df))
 
@@ -406,5 +414,6 @@ end
 function !(df::PandasWrapped)
     pandas_wrap(df.pyo[:__neg__]())
 end
+
 
 end
