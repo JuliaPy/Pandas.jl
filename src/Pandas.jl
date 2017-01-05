@@ -24,10 +24,6 @@ export resample,date_range,to_datetime,to_timedelta,bdate_range,period_range,ewm
 export rolling_count, expanding_count, rolling_sum, expanding_sum, rolling_mean, expanding_mean, rolling_median, expanding_median, rolling_var, expanding_var, rolling_std, expanding_std, rolling_min, expanding_min, rolling_max, expanding_max, rolling_corr, expanding_corr, rolling_corr_pairwise, expanding_corr_pairwise, rolling_cov, expanding_cov, rolling_skew, expanding_skew, rolling_kurt, expanding_kurt, rolling_apply, expanding_apply, rolling_quantile, expanding_quantile, index!, sample
 export @>, @query
 
-# np = pyimport("numpy")
-# pandas_raw = pyimport("pandas")
-# pandas_mod = pywrap(pandas_raw)
-
 const np = PyNULL()
 const pandas_raw = PyNULL()
 
@@ -82,14 +78,10 @@ function Base.Array(x::PandasWrapped)
     end
 end
 
-
-#Base.values(x::PandasWrapped) = convert(PyArray, x.pyo["values"])
-
 function Base.values(x::PandasWrapped)
     pyarray = convert(PyArray, x.pyo["values"])
     unsafe_wrap(Array, pyarray.data, size(pyarray))
 end
-
 
 function pandas_wrap(pyo::PyObject)
     for (pyt, pyv) in type_map
@@ -104,7 +96,6 @@ pandas_wrap(x::Union{AbstractArray, Tuple}) = [pandas_wrap(_) for _ in x]
 
 pandas_wrap(pyo) = pyo
 
-#fix_arg(x::Range1) = pyeval(@sprintf "slice(%d, %d)" x.start x.start+x.len)
 fix_arg(x::StepRange) = pyeval(@sprintf "slice(%d, %d, %d)" x.start x.start+length(x)*x.step x.step)
 fix_arg(x::UnitRange) = fix_arg(StepRange(x.start, 1, x.stop))
 fix_arg(x) = x
@@ -126,7 +117,7 @@ function pyattr(class, method, orig_method)
     quote
         function $(esc(method))(pyt::$class, args...; kwargs...)
             pyo = pyt.pyo[string($m_quote)]
-            if true#isa(pytype_query(pyo), Function)
+            if true
                 new_args = [fix_arg(arg) for arg in args]
                 pyo = pyt.pyo[$m_quote](new_args...; kwargs...)
             else
@@ -285,13 +276,6 @@ for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_ta
     delegate(m, quote pandas_raw[$(quot(m))] end)
 end
 
-# for m in ["count", "sum", "mean", "median", "var", "std", "min", "max", "corr", "corr_pairwise", "cov", "skew", "kurt", "apply", "quantile"]
-#     for f in ["rolling", "expanding"]
-#         s = symbol(string(f, "_", m))
-#         delegate(m, quote pandas_mod.$s end)
-#     end
-# end
-
 function show(io::IO, df::PandasWrapped)
     s = df.pyo[:__str__]()
     println(io, s)
@@ -307,13 +291,12 @@ function query(df::DataFrame, e::Expr) # This whole method is a terrible hack
     s = replace(s, "||", "|")
     s = replace(s, "∈", "==")
     s = replace(s, "!", "~")
-    @show s
     query(df, s)
 end
 
 macro query(df, e)
     quote
-        query($df, $(QuoteNode(e)))
+        query($(esc(df)), $(QuoteNode(e)))
     end
 end
 
