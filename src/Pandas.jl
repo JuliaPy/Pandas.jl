@@ -9,7 +9,7 @@ import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.st
 
 import Base: abs, any, count, cov, cummax, cummin, cumprod, cumsum, diff, drop, filter, first, indices, last, median, min, quantile, rank, select, sort, take, truncate
 
-import Base: +, -, *, /
+import Base: +, -, *, /, !
 
 import PyPlot.plot
 
@@ -21,7 +21,7 @@ export read_csv, read_html, read_json, read_excel, read_table, save, stats,  mel
 export pivot_table, crosstab, cut, qcut, get_dummies, deletecolumn!, siz, name, setname!
 export argsort,order,asfreq,asof,shift,first_valid_index,last_valid_index,weekday,resample,tz_conert,tz_localize
 export resample,date_range,to_datetime,to_timedelta,bdate_range,period_range,ewma,ewmstd,ewmvar,ewmcorr,ewmcov
-export rolling_count, expanding_count, rolling_sum, expanding_sum, rolling_mean, expanding_mean, rolling_median, expanding_median, rolling_var, expanding_var, rolling_std, expanding_std, rolling_min, expanding_min, rolling_max, expanding_max, rolling_corr, expanding_corr, rolling_corr_pairwise, expanding_corr_pairwise, rolling_cov, expanding_cov, rolling_skew, expanding_skew, rolling_kurt, expanding_kurt, rolling_apply, expanding_apply, rolling_quantile, expanding_quantile
+export rolling_count, expanding_count, rolling_sum, expanding_sum, rolling_mean, expanding_mean, rolling_median, expanding_median, rolling_var, expanding_var, rolling_std, expanding_std, rolling_min, expanding_min, rolling_max, expanding_max, rolling_corr, expanding_corr, rolling_corr_pairwise, expanding_corr_pairwise, rolling_cov, expanding_cov, rolling_skew, expanding_skew, rolling_kurt, expanding_kurt, rolling_apply, expanding_apply, rolling_quantile, expanding_quantile, index!, sample
 export @>
 
 # np = pyimport("numpy")
@@ -266,7 +266,7 @@ function index(df::PandasWrapped)
     pandas_wrap(df.pyo[:index])
 end
 
-@df_pyattrs iloc loc reset_index  head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot argsort order asfreq asof shift first_valid_index last_valid_index weekday resample tz_conert tz_localize isin
+@df_pyattrs iloc loc reset_index  head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot argsort order asfreq asof shift first_valid_index last_valid_index weekday resample tz_conert tz_localize isin sample
 
 @df_pyattrs_eval to_clipboard to_csv to_dense to_dict to_excel to_gbq to_hdf to_html to_json to_latex to_msgpack to_panel to_pickle to_records to_sparse to_sql to_string query
 
@@ -364,6 +364,47 @@ end
 
 function DataFrame(pairs::Pair...)
     DataFrame(Dict(pairs...))
+end
+
+function index!(df::PandasWrapped, new_index)
+    df.pyo[:index] = new_index
+    df
+end
+
+function Base.eltype(s::Series)
+    dtype_map = Dict(
+        np[:dtype]("int64") => Int64,
+        np[:dtype]("float64") => Float64,
+    )
+    get(dtype_map, s.pyo[:dtype], Any)
+end
+
+function Base.map(f::Function, s::Series)
+    if eltype(s) ∈ (Int64, Float64)
+        Series([f(_) for _ in values(s)])
+    else
+        Series([f(_) for _ in s])
+    end
+end
+
+function Base.map(x, s::Series; na_action=nothing)
+    pandas_wrap(s.pyo[:map](x, na_action))
+end
+
+function Base.get(df::PandasWrapped, key, default)
+    pandas_wrap(df.pyo[:get](key, default=default))
+end
+
+function Base.getindex(s::Series, c::CartesianIndex{1})
+    s[c[1]]
+end
+
+function Base.copy(df::PandasWrapped)
+    pandas_wrap(df.pyo[:copy]())
+end
+
+function !(df::PandasWrapped)
+    pandas_wrap(df.pyo[:__neg__]())
 end
 
 end
