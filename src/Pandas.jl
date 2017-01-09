@@ -4,6 +4,7 @@ module Pandas
 using PyCall
 using PyPlot
 using Lazy
+using Compat
 
 import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.std, Base.show, Base.merge, Base.convert, Base.hist, Base.join, Base.replace, Base.endof, Base.start, Base.next, Base.done, Base.sum, Base.var
 
@@ -80,7 +81,7 @@ end
 
 function Base.values(x::PandasWrapped)
     pyarray = convert(PyArray, x.pyo["values"])
-    unsafe_wrap(Array, pyarray.data, size(pyarray))
+    @compat unsafe_wrap(Array, pyarray.data, size(pyarray))
 end
 
 function pandas_wrap(pyo::PyObject)
@@ -236,7 +237,7 @@ end
 
 @gb_pyattrs mean std agg aggregate median var ohlc transform groups indices get_group hist plot count
 
-siz(gb::GroupBy) = gb.pyo[:size]()
+siz(gb::GroupBy) = pandas_wrap(gb.pyo[:size]())
 
 function index(df::PandasWrapped)
     pandas_wrap(df.pyo[:index])
