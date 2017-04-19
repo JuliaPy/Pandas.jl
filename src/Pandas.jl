@@ -59,7 +59,7 @@ end
 quot(x) = Expr(:quote, x)
 
 function Base.Array(x::PandasWrapped)
-    c = np[:asarray](x)
+    c = np[:asarray](x.pyo)
     if typeof(c).parameters[1] == PyObject
         out = Array{Any}(size(x))
         for idx in eachindex(out)
@@ -95,8 +95,10 @@ pandas_wrap(x::Union{AbstractArray, Tuple}) = [pandas_wrap(_) for _ in x]
 
 pandas_wrap(pyo) = pyo
 
-fix_arg(x::StepRange) = pyeval(@sprintf "slice(%d, %d, %d)" x.start x.start+length(x)*x.step x.step)
+# fix_arg(x::StepRange) = pyeval(@sprintf "slice(%d, %d, %d)" x.start x.start+length(x)*x.step x.step)
+fix_arg(x::StepRange) = py"slice($(x.start), $(x.start+length(x)*x.step), $(x.step))"
 fix_arg(x::UnitRange) = fix_arg(StepRange(x.start, 1, x.stop))
+fix_arg(x::PandasWrapped) = x.pyo
 fix_arg(x) = x
 
 function fix_arg(x, offset)
@@ -213,13 +215,13 @@ pyattr_set([DataFrame, Series], :T, :abs, :align, :any, :argsort, :asfreq, :asof
 :drop_duplicates, :dropna, :duplicated, :fillna, :filter, :first, :first_valid_index,
 :head, :hist, :idxmax, :idxmin, :iloc, :isin, :join, :last, :last_valid_index,
 :loc, :mean, :median, :min, :mode, :order, :pct_change, :pivot, :plot, :quantile,
-:query, :rank, :reindex, :reindex_axis, :reindex_like, :rename, :reodrer_levels,
+:rank, :reindex, :reindex_axis, :reindex_like, :rename, :reodrer_levels,
 :replace, :resample, :reset_index, :sample, :select, :set_index, :shift, :skew,
 :sort, :sort_index, :sortlevel, :stack, :std, :sum, :swaplevel, :tail, :take,
 :to_clipboard, :to_csv, :to_dense, :to_dict, :to_excel, :to_gbq, :to_hdf, :to_html,
 :to_json, :to_latex, :to_msgpack, :to_panel, :to_pickle, :to_records, :to_sparse,
 :to_sql, :to_string, :truncate, :tz_conert, :tz_localize, :unstack, :var, :weekday,
-:xs, :index)
+:xs, :index, :merge)
 
 Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
@@ -272,8 +274,7 @@ function show(io::IO, df::PandasWrapped)
 end
 
 function query(df::DataFrame, s::AbstractString)
-    # pandas_wrap(pyeval("df.query(s)", df=df, s=s))
-    pandas_wrap(py"$df.query($s)")
+    pandas_wrap(py"$(df.pyo).query($s)")
 end
 
 function query(df::DataFrame, e::Expr) # This whole method is a terrible hack
