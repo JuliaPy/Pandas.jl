@@ -34,7 +34,6 @@ const type_map = Dict{PyObject, Type}()
 
 @compat abstract type PandasWrapped end
 
-# Base.convert(::Type{PyObject}, x::PandasWrapped) = x.pyo
 PyObject(x::PandasWrapped) = x.pyo
 
 macro pytype(name, class)
