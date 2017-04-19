@@ -27,7 +27,7 @@ In general, if ``df`` is a Pandas object (such as a dataframe or series), then t
 
 ```julia
 >> using Pandas
->> df = DataFrame([:age=>[27, 29, 27], :name=>["James", "Jill", "Jake"]])
+>> df = DataFrame(Dict(:age=>[27, 29, 27], :name=>["James", "Jill", "Jake"]))
    age   name
 0   27  James
 1   29   Jill
@@ -53,8 +53,8 @@ df[:age]
 2    27
 Name: age, dtype: int64
 
->> df2 = DataFrame([:income=>[45, 101, 87]], index=["Jake", "James", "Jill"])
->> df3 = join(df, df2, "name")
+>> df2 = DataFrame(Dict(:income=>[45, 101, 87]), index=["Jake", "James", "Jill"])
+>> df3 = merge(df, df2, left_on="name", right_index=true)
    age   name  income
 0   27  James     101
 1   29   Jill      87
@@ -97,8 +97,8 @@ Input/Output
 -------------
 Example:
 ```julia
-df = read_csv("my_csv_file.csv")
-to_json(df, "my_json_file.json")
+df = read_csv("my_csv_file.csv") # Read in a CSV file as a dataframe
+to_json(df, "my_json_file.json") # Save a dataframe to disk in JSON format
 ```
 
 Performance
