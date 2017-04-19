@@ -34,8 +34,6 @@ const type_map = Dict{PyObject, Type}()
 
 abstract type PandasWrapped end
 
-convert(::Type{PyObject}, x::PandasWrapped) = x.pyo
-
 macro pytype(name, class)
     quote
         immutable $(name) <: PandasWrapped
@@ -112,11 +110,12 @@ end
 pyattr(class, method) = pyattr(class, method, method)
 
 function pyattr(class, jl_method, py_method)
-    m_quote = quot(py_method)
+    # m_quote = quot(py_method)
+    m_quote = string(py_method)
     quote
         function $(esc(jl_method))(pyt::$class, args...; kwargs...)
             new_args = fix_arg.(args)
-            pyo = pyt.pyo[$m_quote](new_args...; kwargs...)
+            pyo = pyt.pyo[$(string(py_method))](new_args...; kwargs...)
             wrapped = pandas_wrap(pyo)
         end
     end
@@ -263,7 +262,7 @@ for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_ta
     :expanding_quantile, :rolling_window, :to_numeric]
     @eval begin
         function $m(args...; kwargs...)
-            pandas_raw[m](args...; kwargs...)
+            pandas_wrap(pandas_raw[$(string(m))](args...; kwargs...))
         end
     end
 end
