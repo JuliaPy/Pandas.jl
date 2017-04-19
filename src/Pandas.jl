@@ -8,8 +8,8 @@ using Compat
 
 import Base: getindex, setindex!, length, size, mean, std, show, merge, convert,
  join, replace, endof, start, next, done, sum, var, abs, any, count, cov,
- cummax, cummin, cumprod, cumsum, diff, drop, filter, first, indices, last,
- median, min, quantile, rank, select, sort, take, truncate, +, -, *, /, !
+ cummax, cummin, cumprod, cumsum, diff, filter, first, indices, last,
+ median, min, quantile, rank, select, sort, truncate, +, -, *, /, !
 
 import PyPlot.plot
 
@@ -22,17 +22,19 @@ function __init__()
     copy!(np, pyimport_conda("numpy", "numpy"))
     copy!(pandas_raw, pyimport_conda("pandas", "pandas"))
     for (pandas_expr, julia_type) in pre_type_map
-        push!(type_map, (pandas_expr(), julia_type))
+        type_map[pandas_expr()] = julia_type
     end
 end
 
 const pre_type_map = []
-const type_map = []
+
+# Maps a python object corresponding to a Pandas class to a Julia type which
+# wraps that class.
+const type_map = Dict{PyObject, Type}()
 
 abstract type PandasWrapped end
 
 convert(::Type{PyObject}, x::PandasWrapped) = x.pyo
-PyCall.PyObject(x::PandasWrapped) = x.pyo
 
 macro pytype(name, class)
     quote
@@ -74,6 +76,12 @@ function Base.values(x::PandasWrapped)
     @compat unsafe_wrap(Array, pyarray.data, size(pyarray))
 end
 
+"""
+    pandas_wrap(pyo::PyObject)
+
+Wrap an instance of a Pandas python class in the Julia type which corresponds
+to that class.
+"""
 function pandas_wrap(pyo::PyObject)
     for (pyt, pyv) in type_map
         if pyisinstance(pyo, pyt)
@@ -99,69 +107,40 @@ function fix_arg(x, offset)
     end
 end
 
-function pyattr(class, method, orig_method)
-    if orig_method == :nothing
-        m_quote = quot(method)
-    else
-        m_quote = quot(orig_method)
-    end
-    quote
-        function $(esc(method))(pyt::$class, args...; kwargs...)
-            pyo = pyt.pyo[string($m_quote)]
-            if true
-                new_args = [fix_arg(arg) for arg in args]
-                pyo = pyt.pyo[$m_quote](new_args...; kwargs...)
-            else
-                pyo = pyt.pyo[string($m_quote)]
-            end
+pyattr(class, method) = pyattr(class, method, method)
 
+function pyattr(class, jl_method, py_method)
+    m_quote = quot(py_method)
+    quote
+        function $(esc(jl_method))(pyt::$class, args...; kwargs...)
+            new_args = fix_arg.(args)
+            pyo = pyt.pyo[$m_quote](new_args...; kwargs...)
             wrapped = pandas_wrap(pyo)
         end
     end
 end
 
-function delegate(new_func, orig_func, escape=false)
-    @eval begin
-        function $(escape ? esc(new_func) : new_func)(args...; kwargs...)
-            f = $(orig_func)
-            pyo = f(args...; kwargs...)
-            pandas_wrap(pyo)
-        end
-    end
-end
-
-macro delegate(new_func, orig_func)
-    delegate(new_func, orig_func, true)
+macro pyattr(class, method)
+    pyattr(class, method)
 end
 
 macro pyattr(class, method, orig_method)
     pyattr(class, method, orig_method)
 end
 
-macro df_pyattrs(methods...)
-    classes = [:DataFrame, :Series]
-    m_exprs = Expr[]
-    for method in methods
-        exprs = Array(Expr, length(classes))
-        for (i, class) in enumerate(classes)
-            exprs[i] = pyattr(class, method, :nothing)
-        end
-        push!(m_exprs, Expr(:block, exprs...))
-    end
-    Expr(:block, m_exprs...)
-end
+"""
+    pyattr_set(types, methods...)
 
-macro gb_pyattrs(methods...)
-    classes = [:GroupBy, :SeriesGroupBy]
-    m_exprs = Expr[]
-    for method in methods
-        exprs = Array(Expr, length(classes))
-        for (i, class) in enumerate(classes)
-            exprs[i] = pyattr(class, method, :nothing)
+For each Julia type `T<:PandasWrapped` in `types` and each method `m` in `methods`,
+define a new function `m(t::T, args...)` that delegates to the underlying
+pyobject wrapped by `t`.
+"""
+function pyattr_set(classes, methods...)
+    for class in classes
+        for method in methods
+            @eval @pyattr($class, $method)
         end
-        push!(m_exprs, Expr(:block, exprs...))
     end
-    Expr(:block, m_exprs...)
 end
 
 macro pyasvec(class)
@@ -218,21 +197,29 @@ end
 @pytype SeriesGroupBy ()->pandas_raw[:core][:groupby]["SeriesGroupBy"]
 
 
-@pyattr DataFrame groupby nothing
-@pyattr DataFrame columns nothing
+@pyattr DataFrame groupby
+@pyattr DataFrame columns
 @pyattr GroupBy app apply
 
 
-@gb_pyattrs mean std agg aggregate median var ohlc transform groups indices get_group hist plot count
+pyattr_set([GroupBy, SeriesGroupBy], :mean, :std, :agg, :aggregate, :median,
+:var, :ohlc, :transform, :groups, :indices, :get_group, :hist,  :plot, :count)
 
-siz(gb::GroupBy) = pandas_wrap(gb.pyo[:size]())
+@pyattr GroupBy siz size
 
-function index(df::PandasWrapped)
-    pandas_wrap(df.pyo[:index])
-end
-
-@df_pyattrs iloc loc reset_index  head xs plot hist join align drop drop_duplicates duplicated filter first idxmax idxmin last reindex reindex_axis reindex_like rename tail set_index select take truncate abs any clip clip_lower clip_upper corr corrwith count cov cummax cummin cumprod cumsum describe diff mean median min mode pct_change rank quantile sum skew var std dropna fillna replace delevel pivot reodrer_levels sort sort_index sortlevel swaplevel stack unstack T boxplot argsort order asfreq asof shift first_valid_index last_valid_index weekday resample tz_conert tz_localize isin sample to_clipboard to_csv to_dense to_dict to_excel to_gbq to_hdf to_html to_json to_latex to_msgpack to_panel to_pickle to_records to_sparse to_sql to_string query
-
+pyattr_set([DataFrame, Series], :T, :abs, :align, :any, :argsort, :asfreq, :asof,
+:boxplot, :clip, :clip_lower, :clip_upper, :corr, :corrwith, :count, :cov,
+:cummax, :cummin, :cumprod, :cumsum, :delevel, :describe, :diff, :drop,
+:drop_duplicates, :dropna, :duplicated, :fillna, :filter, :first, :first_valid_index,
+:head, :hist, :idxmax, :idxmin, :iloc, :isin, :join, :last, :last_valid_index,
+:loc, :mean, :median, :min, :mode, :order, :pct_change, :pivot, :plot, :quantile,
+:query, :rank, :reindex, :reindex_axis, :reindex_like, :rename, :reodrer_levels,
+:replace, :resample, :reset_index, :sample, :select, :set_index, :shift, :skew,
+:sort, :sort_index, :sortlevel, :stack, :std, :sum, :swaplevel, :tail, :take,
+:to_clipboard, :to_csv, :to_dense, :to_dict, :to_excel, :to_gbq, :to_hdf, :to_html,
+:to_json, :to_latex, :to_msgpack, :to_panel, :to_pickle, :to_records, :to_sparse,
+:to_sql, :to_string, :truncate, :tz_conert, :tz_localize, :unstack, :var, :weekday,
+:xs, :index)
 
 Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
@@ -261,8 +248,22 @@ end
 Base.ndims(df::Union{DataFrame, Series}) = length(size(df))
 
 
-for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table, :save, :stats,  :melt, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut, :qcut, :get_dummies, :resample, :date_range, :to_datetime, :to_timedelta, :bdate_range, :period_range, :ewmstd, :ewmvar, :ewmcorr, :ewmcov, :rolling_count, :expanding_count, :rolling_sum, :expanding_sum, :rolling_mean, :expanding_mean, :rolling_median, :expanding_median, :rolling_var, :expanding_var, :rolling_std, :expanding_std, :rolling_min, :expanding_min, :rolling_max, :expanding_max, :rolling_corr, :expanding_corr, :rolling_corr_pairwise, :expanding_corr_pairwise, :rolling_cov, :expanding_cov, :rolling_skew, :expanding_skew, :rolling_kurt, :expanding_kurt, :rolling_apply, :expanding_apply, :rolling_quantile, :expanding_quantile, :rolling_window, :to_numeric]
-    delegate(m, quote pandas_raw[$(quot(m))] end)
+for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table,
+    :save, :stats,  :melt, :ewma, :concat, :merge, :pivot_table, :crosstab, :cut,
+    :qcut, :get_dummies, :resample, :date_range, :to_datetime, :to_timedelta,
+    :bdate_range, :period_range, :ewmstd, :ewmvar, :ewmcorr, :ewmcov, :rolling_count,
+    :expanding_count, :rolling_sum, :expanding_sum, :rolling_mean, :expanding_mean,
+    :rolling_median, :expanding_median, :rolling_var, :expanding_var, :rolling_std,
+    :expanding_std, :rolling_min, :expanding_min, :rolling_max, :expanding_max,
+    :rolling_corr, :expanding_corr, :rolling_corr_pairwise, :expanding_corr_pairwise,
+    :rolling_cov, :expanding_cov, :rolling_skew, :expanding_skew, :rolling_kurt,
+    :expanding_kurt, :rolling_apply, :expanding_apply, :rolling_quantile,
+    :expanding_quantile, :rolling_window, :to_numeric]
+    @eval begin
+        function $m(args...; kwargs...)
+            pandas_raw[m](args...; kwargs...)
+        end
+    end
 end
 
 function show(io::IO, df::PandasWrapped)
@@ -280,10 +281,6 @@ function query(df::DataFrame, e::Expr) # This whole method is a terrible hack
     for (target, repl) in [("&&", "&"), ("||", "|"), ("∈", "=="), ("!", "~")]
         s = replace(s, target, repl)
     end
-    # s = replace(s, "&&", "&")
-    # s = replace(s, "||", "|")
-    # s = replace(s, "∈", "==")
-    # s = replace(s, "!", "~")
     query(df, s)
 end
 
@@ -340,12 +337,10 @@ end
 name(s::Series) = s.pyo[:name]
 setname!(s::Series, name) = s.pyo[:name] = name
 
-import Base: .==, .>, .<, .>=, .<=, .!=
-
-for (op, pyop) in [(:.==, :__eq__), (:.>, :__gt__), (:.<, :__lt__), (:.>=, :__ge__), (:.<=, :__le__), (:.!=, :__ne__)]
-    @eval function $op(s::PandasWrapped, x)
-        pandas_wrap(s.pyo[$(QuoteNode(pyop))](x))
-    end
+if VERSION < v"0.6-"
+    include("operators_v5.jl")
+else
+    include("operators_v6.jl")
 end
 
 function DataFrame(pairs::Pair...)
