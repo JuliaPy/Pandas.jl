@@ -6,7 +6,7 @@ using PyPlot
 using Lazy
 using Compat
 
-import Base: getindex, setindex!, length, size, mean, std, show, merge, convert,
+import Base: getindex, setindex!, length, size, mean, std, show, convert,
  join, replace, endof, start, next, done, sum, var, abs, any, count, cov,
  cummax, cummin, cumprod, cumsum, diff, filter, first, indices, last,
  median, min, quantile, rank, select, sort, truncate, +, -, *, /, !
@@ -222,7 +222,7 @@ pyattr_set([DataFrame, Series], :T, :abs, :align, :any, :argsort, :asfreq, :asof
 :to_clipboard, :to_csv, :to_dense, :to_dict, :to_excel, :to_gbq, :to_hdf, :to_html,
 :to_json, :to_latex, :to_msgpack, :to_panel, :to_pickle, :to_records, :to_sparse,
 :to_sql, :to_string, :truncate, :tz_conert, :tz_localize, :unstack, :var, :weekday,
-:xs, :index, :merge)
+:xs, :index, :(Base.merge))
 
 Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
