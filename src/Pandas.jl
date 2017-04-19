@@ -32,7 +32,7 @@ const pre_type_map = []
 # wraps that class.
 const type_map = Dict{PyObject, Type}()
 
-abstract type PandasWrapped end
+@compat abstract type PandasWrapped end
 
 macro pytype(name, class)
     quote
