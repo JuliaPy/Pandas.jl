@@ -6,24 +6,14 @@ using PyPlot
 using Lazy
 using Compat
 
-import Base.getindex, Base.setindex!, Base.length, Base.size, Base.mean, Base.std, Base.show, Base.merge, Base.convert, Base.hist, Base.join, Base.replace, Base.endof, Base.start, Base.next, Base.done, Base.sum, Base.var
-
-import Base: abs, any, count, cov, cummax, cummin, cumprod, cumsum, diff, drop, filter, first, indices, last, median, min, quantile, rank, select, sort, take, truncate
-
-import Base: +, -, *, /, !
+import Base: getindex, setindex!, length, size, mean, std, show, merge, convert,
+ join, replace, endof, start, next, done, sum, var, abs, any, count, cov,
+ cummax, cummin, cumprod, cumsum, diff, drop, filter, first, indices, last,
+ median, min, quantile, rank, select, sort, take, truncate, +, -, *, /, !
 
 import PyPlot.plot
 
-export DataFrame, Iloc, Loc, Ix, Series, MultiIndex, Index, GroupBy
-export mean, std, agg, aggregate, median, var, ohlc, transform, groups, indices, get_group
-export iloc,loc,reset_index,index,head,xs,plot,hist,join,align,drop,drop_duplicates,duplicated,filter,first,idxmax,idxmin,last,reindex,reindex_axis,reindex_like,rename,tail,set_index,select,take,truncate,abs,any,clip,clip_lower,clip_upper,corr,corrwith,count,cov,cummax,cummin,cumprod,cumsum,describe,diff,mean,median,min,mode,pct_change,rank,quantile,sum,skew,var,std,dropna,fillna,replace,delevel,pivot,reodrer_levels,sort,sort_index,sortlevel,swaplevel,stack,unstack,T, to_numeric, isin
-export to_clipboard,to_csv,to_dense,to_dict,to_excel,to_gbq,to_hdf,to_html,to_json,to_latex,to_msgpack,to_panel,to_pickle,to_records,to_sparse,to_sql,to_string,query, groupby, columns, app, values, from_arrays, from_tuples
-export read_csv, read_html, read_json, read_excel, read_table, save, stats,  melt, rolling_count, rolling_sum, rolling_window, rolling_quantile, ewma, setcolumns!, concat, read_pickle
-export pivot_table, crosstab, cut, qcut, get_dummies, deletecolumn!, siz, name, setname!
-export argsort,order,asfreq,asof,shift,first_valid_index,last_valid_index,weekday,resample,tz_conert,tz_localize
-export resample,date_range,to_datetime,to_timedelta,bdate_range,period_range,ewma,ewmstd,ewmvar,ewmcorr,ewmcov
-export rolling_count, expanding_count, rolling_sum, expanding_sum, rolling_mean, expanding_mean, rolling_median, expanding_median, rolling_var, expanding_var, rolling_std, expanding_std, rolling_min, expanding_min, rolling_max, expanding_max, rolling_corr, expanding_corr, rolling_corr_pairwise, expanding_corr_pairwise, rolling_cov, expanding_cov, rolling_skew, expanding_skew, rolling_kurt, expanding_kurt, rolling_apply, expanding_apply, rolling_quantile, expanding_quantile, index!, sample
-export @>, @query
+include("exports.jl")
 
 const np = PyNULL()
 const pandas_raw = PyNULL()
@@ -39,7 +29,7 @@ end
 const pre_type_map = []
 const type_map = []
 
-abstract PandasWrapped
+abstract type PandasWrapped end
 
 convert(::Type{PyObject}, x::PandasWrapped) = x.pyo
 PyCall.PyObject(x::PandasWrapped) = x.pyo
@@ -130,7 +120,6 @@ function pyattr(class, method, orig_method)
     end
 end
 
-
 function delegate(new_func, orig_func, escape=false)
     @eval begin
         function $(escape ? esc(new_func) : new_func)(args...; kwargs...)
@@ -161,8 +150,6 @@ macro df_pyattrs(methods...)
     end
     Expr(:block, m_exprs...)
 end
-
-
 
 macro gb_pyattrs(methods...)
     classes = [:GroupBy, :SeriesGroupBy]
@@ -210,6 +197,7 @@ macro pyasvec(class)
         end
     end
     quote
+
         $index_expr
         $length_expr
         function $(esc(:endof))(x::$class)
@@ -283,15 +271,19 @@ function show(io::IO, df::PandasWrapped)
 end
 
 function query(df::DataFrame, s::AbstractString)
-    pandas_wrap(pyeval("df.query(s)", df=df, s=s))
+    # pandas_wrap(pyeval("df.query(s)", df=df, s=s))
+    pandas_wrap(py"$df.query($s)")
 end
 
 function query(df::DataFrame, e::Expr) # This whole method is a terrible hack
     s = string(e)
-    s = replace(s, "&&", "&")
-    s = replace(s, "||", "|")
-    s = replace(s, "∈", "==")
-    s = replace(s, "!", "~")
+    for (target, repl) in [("&&", "&"), ("||", "|"), ("∈", "=="), ("!", "~")]
+        s = replace(s, target, repl)
+    end
+    # s = replace(s, "&&", "&")
+    # s = replace(s, "||", "|")
+    # s = replace(s, "∈", "==")
+    # s = replace(s, "!", "~")
     query(df, s)
 end
 
@@ -314,6 +306,7 @@ for op in [(:+, :__add__), (:*, :__mul__), (:/, :__div__), (:-, :__sub__)]
         function $(op[1])(x::PandasWrapped, y::PandasWrapped)
             f = $(quot(op[2]))
             py_f = pyeval(string("x.", f), x=x.pyo)
+            # py_f = py"$(x.pyo).$(string(f))"
             res = py_f(y)
             return pandas_wrap(res)
         end
@@ -321,6 +314,7 @@ for op in [(:+, :__add__), (:*, :__mul__), (:/, :__div__), (:-, :__sub__)]
         function $(op[1])(x::PandasWrapped, y)
             f = $(quot(op[2]))
             py_f = pyeval(string("x.", f), x=x.pyo)
+            # py_f = py"$(x.pyo).$(string(f))"
             res = py_f(y)
             return pandas_wrap(res)
         end
