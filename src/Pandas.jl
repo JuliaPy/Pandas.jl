@@ -339,7 +339,7 @@ end
 name(s::Series) = s.pyo[:name]
 setname!(s::Series, name) = s.pyo[:name] = name
 
-if VERSION < v"0.6-"
+if VERSION < v"0.6.0-dev.1632"
     include("operators_v5.jl")
 else
     include("operators_v6.jl")
