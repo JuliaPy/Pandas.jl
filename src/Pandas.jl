@@ -110,7 +110,6 @@ end
 pyattr(class, method) = pyattr(class, method, method)
 
 function pyattr(class, jl_method, py_method)
-    m_quote = string(py_method)
     quote
         function $(esc(jl_method))(pyt::$class, args...; kwargs...)
             new_args = fix_arg.(args)
@@ -174,7 +173,7 @@ macro pyasvec(class)
         end
     else
         length_expr = quote
-            @pyattr $class length __len__
+            @pyattr $class $(esc(:length)) $(esc(:__len__))
         end
     end
     quote
