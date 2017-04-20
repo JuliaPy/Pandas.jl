@@ -95,7 +95,6 @@ pandas_wrap(x::Union{AbstractArray, Tuple}) = [pandas_wrap(_) for _ in x]
 
 pandas_wrap(pyo) = pyo
 
-# fix_arg(x::StepRange) = pyeval(@sprintf "slice(%d, %d, %d)" x.start x.start+length(x)*x.step x.step)
 fix_arg(x::StepRange) = py"slice($(x.start), $(x.start+length(x)*x.step), $(x.step))"
 fix_arg(x::UnitRange) = fix_arg(StepRange(x.start, 1, x.stop))
 fix_arg(x) = x
@@ -301,25 +300,18 @@ for m in [:from_arrays, :from_tuples]
     end
 end
 
-for op in [(:+, :__add__), (:*, :__mul__), (:/, :__div__), (:-, :__sub__)]
+for (jl_op, py_op) in [(:+, :__add__), (:*, :__mul__), (:/, :__div__), (:-, :__sub__)]
     @eval begin
-        function $(op[1])(x::PandasWrapped, y::PandasWrapped)
-            f = $(quot(op[2]))
-            py_f = pyeval(string("x.", f), x=x.pyo)
-            # py_f = py"$(x.pyo).$(string(f))"
-            res = py_f(y)
-            return pandas_wrap(res)
+        function $(jl_op)(x::PandasWrapped, y)
+            res = x.pyo[$(string(py_op))](y)
+            pandas_wrap(res)
         end
 
-        function $(op[1])(x::PandasWrapped, y)
-            f = $(quot(op[2]))
-            py_f = pyeval(string("x.", f), x=x.pyo)
-            # py_f = py"$(x.pyo).$(string(f))"
-            res = py_f(y)
-            return pandas_wrap(res)
+        function $(jl_op)(x::PandasWrapped, y::PandasWrapped)
+            invoke($(jl_op), Tuple{PandasWrapped, Any}, x, y)
         end
 
-        $(op[1])(y, x::PandasWrapped) = $(op[1])(x, y)
+        $(jl_op)(y, x::PandasWrapped) = $(jl_op)(x, y)
     end
 end
 
