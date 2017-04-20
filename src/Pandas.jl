@@ -150,17 +150,18 @@ macro pyasvec(class)
         function $(esc(:getindex))(pyt::$class, args...)
             offset = should_offset(pyt, args...)
             new_args = tuple([fix_arg(arg, offset) for arg in args]...)
-            pyo = pyt.pyo[:__getitem__](length(new_args)==1 ? new_args[1] : new_args)
+            new_args = (length(new_args)==1 ? new_args[1] : new_args)
+            pyo = pycall(pyt.pyo[:__getitem__], PyObject, new_args)
             pandas_wrap(pyo)
         end
 
         function $(esc(:setindex!))(pyt::$class, value, idxs...)
-            offset = should_offset(pyt, args...)
+            offset = should_offset(pyt, idxs...)
             new_idx = [fix_arg(idx, offset) for idx in idxs]
             if length(new_idx) > 1
-                pyt.pyo[:__setitem__](tuple(new_idx...), value)
+                pandas_wrap(pycall(pyt.pyo[:__setitem__], PyObject, tuple(new_idx...), value))
             else
-                pyt.pyo[:__setitem__](new_idx[1], value)
+                pandas_wrap(pycall(pyt.pyo[:__setitem__], PyObject, new_idx[1], value))
             end
         end
     end
