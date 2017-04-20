@@ -8,4 +8,5 @@ age[2] = 31
 
 
 df = read_csv(joinpath(dirname(@__FILE__), "test.csv"))
+typeof(df)
 @test isa(df, Pandas.DataFrame)

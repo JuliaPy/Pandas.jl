@@ -43,7 +43,7 @@ macro pytype(name, class)
             $(esc(name))(pyo::PyObject) = new(pyo)
             function $(esc(name))(args...; kwargs...)
                 pandas_method = ($class)()
-                new(pandas_method(args...; kwargs...))
+                new(pycall(pandas_method, PyObject, args...; kwargs...))
             end
         end
         $(esc(:start))(x::$name) = start(x.pyo)
@@ -98,7 +98,6 @@ pandas_wrap(pyo) = pyo
 # fix_arg(x::StepRange) = pyeval(@sprintf "slice(%d, %d, %d)" x.start x.start+length(x)*x.step x.step)
 fix_arg(x::StepRange) = py"slice($(x.start), $(x.start+length(x)*x.step), $(x.step))"
 fix_arg(x::UnitRange) = fix_arg(StepRange(x.start, 1, x.stop))
-fix_arg(x::PandasWrapped) = x.pyo
 fix_arg(x) = x
 
 function fix_arg(x, offset)
@@ -264,7 +263,9 @@ for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_ta
     :expanding_quantile, :rolling_window, :to_numeric]
     @eval begin
         function $m(args...; kwargs...)
-            pandas_wrap(pandas_raw[$(string(m))](args...; kwargs...))
+            method = pandas_raw[$(string(m))]
+            result = pycall(method, PyObject, args...; kwargs...)
+            pandas_wrap(result)
         end
     end
 end
