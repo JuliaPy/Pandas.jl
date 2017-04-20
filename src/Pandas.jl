@@ -110,12 +110,12 @@ end
 pyattr(class, method) = pyattr(class, method, method)
 
 function pyattr(class, jl_method, py_method)
-    # m_quote = quot(py_method)
     m_quote = string(py_method)
     quote
         function $(esc(jl_method))(pyt::$class, args...; kwargs...)
             new_args = fix_arg.(args)
-            pyo = pyt.pyo[$(string(py_method))](new_args...; kwargs...)
+            method = pyt.pyo[$(string(py_method))]
+            pyo = pycall(method, PyObject, new_args...; kwargs...)
             wrapped = pandas_wrap(pyo)
         end
     end
@@ -197,11 +197,7 @@ end
 @pytype GroupBy ()->pandas_raw[:core][:groupby]["DataFrameGroupBy"]
 @pytype SeriesGroupBy ()->pandas_raw[:core][:groupby]["SeriesGroupBy"]
 
-
-@pyattr DataFrame groupby
-@pyattr DataFrame columns
 @pyattr GroupBy app apply
-
 
 pyattr_set([GroupBy, SeriesGroupBy], :mean, :std, :agg, :aggregate, :median,
 :var, :ohlc, :transform, :groups, :indices, :get_group, :hist,  :plot, :count)
@@ -221,6 +217,7 @@ pyattr_set([DataFrame, Series], :T, :abs, :align, :any, :argsort, :asfreq, :asof
 :to_json, :to_latex, :to_msgpack, :to_panel, :to_pickle, :to_records, :to_sparse,
 :to_sql, :to_string, :truncate, :tz_conert, :tz_localize, :unstack, :var, :weekday,
 :xs, :index, :merge)
+pyattr_set([DataFrame], :groupby, :columns)
 
 Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
@@ -247,7 +244,6 @@ end
 @pyasvec GroupBy
 
 Base.ndims(df::Union{DataFrame, Series}) = length(size(df))
-
 
 for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_table,
     :save, :stats,  :melt, :ewma, :concat, :pivot_table, :crosstab, :cut,
