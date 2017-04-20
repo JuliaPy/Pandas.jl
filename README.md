@@ -21,6 +21,12 @@ Pkg.clone("Pandas")
 using Pandas
 ```
 
+No-hassle installation is also available via Docker:
+
+```
+docker run -it malmaud/julia_pandas
+```
+
 Usage
 ---------
 In general, if ``df`` is a Pandas object (such as a dataframe or series), then the Python command ``df.x(y, w=z)`` becomes ``x(df, y, w=z)`` in Julia. ``df.loc[a,b,c]`` becomes ``loc(df)[a,b,c]`` (same for ``iloc`` and ``ix``). Example:
