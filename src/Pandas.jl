@@ -275,7 +275,7 @@ function show(io::IO, df::PandasWrapped)
 end
 
 function query(df::DataFrame, s::AbstractString)
-    pandas_wrap(py"$(df.pyo).query($s)")
+    pandas_wrap(py"$(df.pyo).query($s)"o)
 end
 
 function query(df::DataFrame, e::Expr) # This whole method is a terrible hack
