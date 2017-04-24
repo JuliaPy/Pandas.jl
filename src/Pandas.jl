@@ -217,7 +217,7 @@ pyattr_set([DataFrame, Series], :T, :abs, :align, :any, :argsort, :asfreq, :asof
 :to_json, :to_latex, :to_msgpack, :to_panel, :to_pickle, :to_records, :to_sparse,
 :to_sql, :to_string, :truncate, :tz_conert, :tz_localize, :unstack, :var, :weekday,
 :xs, :merge)
-pyattr_set([DataFrame], :groupby, :columns)
+pyattr_set([DataFrame], :groupby)
 
 Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
@@ -235,8 +235,10 @@ function should_offset(s::Series, arg)
     false
 end
 
-function index(x::PandasWrapped)
-    pandas_wrap(x.pyo["index"])
+for attr in [:index, :columns]
+    @eval function $attr(x::PandasWrapped)
+        pandas_wrap(x.pyo[$(string(attr))])
+    end
 end
 
 @pyasvec Series
