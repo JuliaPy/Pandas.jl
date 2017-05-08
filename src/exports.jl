@@ -14,7 +14,6 @@ cummax,
 cummin,
 cumprod,
 cumsum,
-drop,
 drop_duplicates,
 duplicated,
 filter,
@@ -41,7 +40,6 @@ set_index,
 sort_index,
 sum,
 tail,
-take,
 to_csv,
 to_latex,
 truncate,
@@ -191,3 +189,11 @@ tz_localize,
 unstack,
 var,
 weekday
+
+if !isdefined(Base, :drop)
+    export drop
+end
+
+if !isdefined(Base, :take)
+    export take
+end
