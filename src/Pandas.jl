@@ -332,7 +332,7 @@ function deletecolumn!(df::DataFrame, column)
 end
 
 name(s::Series) = s.pyo[:name]
-setname!(s::Series, name) = s.pyo[:name] = name
+name!(s::Series, name) = s.pyo[:name] = name
 
 if VERSION < v"0.6.0-dev.1632"
     include("operators_v5.jl")
