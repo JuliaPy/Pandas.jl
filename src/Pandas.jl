@@ -394,4 +394,12 @@ function !(df::PandasWrapped)
     pandas_wrap(df.pyo[:__neg__]())
 end
 
+function DataFrame(obj)
+    if false # hastrait(obj)
+        # Construct a DataTable
+    else
+        invoke(DataFrame, Tuple{Vararg{Any}}, obj)
+    end
+end
+
 end
