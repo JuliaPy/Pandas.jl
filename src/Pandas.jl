@@ -353,8 +353,17 @@ function Base.eltype(s::Series)
     dtype_map = Dict(
         np[:dtype]("int64") => Int64,
         np[:dtype]("float64") => Float64,
+        np[:dtype]("object") => String,
     )
     get(dtype_map, s.pyo[:dtype], Any)
+end
+
+function Base.eltype(df::DataFrame)
+    types = []
+    for column in columns(df)
+        push!(types, eltype(df[column]))
+    end
+    Tuple{types...}
 end
 
 function Base.map(f::Function, s::Series)
@@ -384,6 +393,5 @@ end
 function !(df::PandasWrapped)
     pandas_wrap(df.pyo[:__neg__]())
 end
-
 
 end
