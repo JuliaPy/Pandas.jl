@@ -5,6 +5,7 @@ using PyCall
 using PyPlot
 using Lazy
 using Compat
+using TableTraits
 
 import Base: getindex, setindex!, length, size, mean, std, show, merge, convert,
  join, replace, endof, start, next, done, sum, var, abs, any, count, cov,
@@ -394,12 +395,16 @@ function !(df::PandasWrapped)
     pandas_wrap(df.pyo[:__neg__]())
 end
 
+include("tabletraits.jl")
+
 function DataFrame(obj)
-    if false # hastrait(obj)
-        # Construct a DataTable
+    if TableTraits.isiterabletable(obj)
+        _construct_pandas_from_iterabletable(obj)
     else
         invoke(DataFrame, Tuple{Vararg{Any}}, obj)
     end
 end
+
+
 
 end
