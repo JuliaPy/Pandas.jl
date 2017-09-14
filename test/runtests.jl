@@ -12,3 +12,7 @@ typeof(df)
 @test isa(df, Pandas.DataFrame)
 
 include("test_tabletraits.jl")
+
+@test !isempty(df)
+empty!(df)
+@test isempty(df)
