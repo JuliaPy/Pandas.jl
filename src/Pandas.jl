@@ -224,6 +224,9 @@ Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
 Base.size(df::PandasWrapped) = df.pyo[:shape]
 
+Base.isempty(df::PandasWrapped) = df.pyo[:empty]
+Base.empty!(df::PandasWrapped) = df.pyo[:drop](df.pyo[:index], inplace=true)
+
 should_offset(::Any, args...) = false
 should_offset(::Union{Iloc, Index}, args...) = true
 
