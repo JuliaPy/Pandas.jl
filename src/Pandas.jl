@@ -33,13 +33,13 @@ const pre_type_map = []
 # wraps that class.
 const type_map = Dict{PyObject, Type}()
 
-@compat abstract type PandasWrapped end
+abstract type PandasWrapped end
 
 PyObject(x::PandasWrapped) = x.pyo
 
 macro pytype(name, class)
     quote
-        immutable $(name) <: PandasWrapped
+        struct $(name) <: PandasWrapped
             pyo::PyObject
             $(esc(name))(pyo::PyObject) = new(pyo)
             function $(esc(name))(args...; kwargs...)
@@ -74,7 +74,7 @@ end
 
 function Base.values(x::PandasWrapped)
     pyarray = convert(PyArray, x.pyo["values"])
-    @compat unsafe_wrap(Array, pyarray.data, size(pyarray))
+    unsafe_wrap(Array, pyarray.data, size(pyarray))
 end
 
 """
@@ -335,11 +335,7 @@ end
 name(s::Series) = s.pyo[:name]
 name!(s::Series, name) = s.pyo[:name] = name
 
-if VERSION < v"0.6.0-dev.1632"
-    include("operators_v5.jl")
-else
-    include("operators_v6.jl")
-end
+include("operators_v6.jl")
 
 function DataFrame(pairs::Pair...)
     DataFrame(Dict(pairs...))
