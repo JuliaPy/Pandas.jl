@@ -189,7 +189,8 @@ tz_conert,
 tz_localize,
 unstack,
 var,
-weekday
+weekday,
+read_sql
 
 if !isdefined(Base, :drop)
     export drop

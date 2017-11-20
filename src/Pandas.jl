@@ -265,7 +265,8 @@ for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_ta
     :rolling_corr, :expanding_corr, :rolling_corr_pairwise, :expanding_corr_pairwise,
     :rolling_cov, :expanding_cov, :rolling_skew, :expanding_skew, :rolling_kurt,
     :expanding_kurt, :rolling_apply, :expanding_apply, :rolling_quantile,
-    :expanding_quantile, :rolling_window, :to_numeric]
+    :expanding_quantile, :rolling_window, :to_numeric, :read_sql, :read_sql_table,
+    :read_sql_query]
     @eval begin
         function $m(args...; kwargs...)
             method = pandas_raw[$(string(m))]
