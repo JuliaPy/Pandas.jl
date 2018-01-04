@@ -287,7 +287,7 @@ end
 
 function query(df::DataFrame, e::Expr) # This whole method is a terrible hack
     s = string(e)
-    for (target, repl) in [("&&", "&"), ("||", "|"), ("∈", "=="), ("!", "~")]
+    for (target, repl) in [("&&", "&"), ("||", "|"), ("∈", "=="), (r"!(?!=)", "~")]
         s = replace(s, target, repl)
     end
     query(df, s)
