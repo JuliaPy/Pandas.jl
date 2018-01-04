@@ -6,6 +6,7 @@ age = values(df[:age])
 age[2] = 31
 @test loc(df)[1, "age"] == 31
 
+query(df, :(age!=27))  # Issue #26
 
 df = read_csv(joinpath(dirname(@__FILE__), "test.csv"))
 typeof(df)
@@ -16,3 +17,5 @@ include("test_tabletraits.jl")
 @test !isempty(df)
 empty!(df)
 @test isempty(df)
+
+
