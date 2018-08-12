@@ -110,6 +110,8 @@ function fix_arg(x, offset)
     end
 end
 
+fix_arg(x::Colon, offset) = pybuiltin("slice")(nothing, nothing, nothing)
+
 pyattr(class, method) = pyattr(class, method, method)
 
 function pyattr(class, jl_method, py_method)
