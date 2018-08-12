@@ -10,7 +10,8 @@ using TableTraits
 import Base: getindex, setindex!, length, size, mean, std, show, merge, convert,
  join, replace, endof, start, next, done, sum, var, abs, any, count, cov,
  cummax, cummin, cumprod, cumsum, diff, filter, first, indices, last,
- median, min, quantile, rank, select, sort, truncate, +, -, *, /, !
+ median, min, quantile, rank, select, sort, truncate, +, -, *, /, !,
+ ==, >, <, >=, <=, !=, &, |
 
 import PyPlot.plot
 
@@ -98,6 +99,7 @@ pandas_wrap(pyo) = pyo
 
 fix_arg(x::StepRange) = py"slice($(x.start), $(x.start+length(x)*x.step), $(x.step))"
 fix_arg(x::UnitRange) = fix_arg(StepRange(x.start, 1, x.stop))
+fix_arg(x::Colon) = pybuiltin("slice")(nothing, nothing, nothing)
 fix_arg(x) = x
 
 function fix_arg(x, offset)
@@ -307,7 +309,12 @@ for m in [:from_arrays, :from_tuples]
     end
 end
 
-for (jl_op, py_op) in [(:+, :__add__), (:*, :__mul__), (:/, :__div__), (:-, :__sub__)]
+for (jl_op, py_op, py_opᵒ) in [(:+, :__add__, :__add__), (:*, :__mul__, :__mul__),
+                               (:/, :__div__, :__rdiv__), (:-, :__sub__, :__rsub__),
+                               (:(==), :__eq__, :__eq__), (:!=, :__ne__, :__ne__), 
+                               (:>, :__gt__, :__lt__), (:<, :__lt__, :__gt__), 
+                               (:>=, :__ge__, :__le__), (:<=, :__le__, :__ge__), 
+                               (:&, :__and__, :__and__), (:|, :__or__, :__or__)]
     @eval begin
         function $(jl_op)(x::PandasWrapped, y)
             res = x.pyo[$(string(py_op))](y)
@@ -318,7 +325,10 @@ for (jl_op, py_op) in [(:+, :__add__), (:*, :__mul__), (:/, :__div__), (:-, :__s
             invoke($(jl_op), Tuple{PandasWrapped, Any}, x, y)
         end
 
-        $(jl_op)(y, x::PandasWrapped) = $(jl_op)(x, y)
+        function $(jl_op)(y, x::PandasWrapped)
+            res = x.pyo[$(string(py_opᵒ))](y)
+            pandas_wrap(res)
+        end
     end
 end
 
