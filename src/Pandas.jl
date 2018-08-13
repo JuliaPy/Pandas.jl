@@ -6,12 +6,14 @@ using PyPlot
 using Lazy
 using Compat
 using TableTraits
+using Statistics
 
-import Base: getindex, setindex!, length, size, mean, std, show, merge, convert,
- join, replace, endof, start, next, done, sum, var, abs, any, count, cov,
- cummax, cummin, cumprod, cumsum, diff, filter, first, indices, last,
- median, min, quantile, rank, select, sort, truncate, +, -, *, /, !,
+import Base: getindex, setindex!, length, size, show, merge, convert,
+ join, replace, lastindex, sum, abs, any, count,
+ cumprod, cumsum, diff, filter, first, last,
+ min, sort, truncate, +, -, *, /, !,
  ==, >, <, >=, <=, !=, &, |
+import Statistics: mean, std, var, cov, median, quantile
 
 import PyPlot.plot
 
@@ -48,12 +50,19 @@ macro pytype(name, class)
                 new(pycall(pandas_method, PyObject, args...; kwargs...))
             end
         end
-        $(esc(:start))(x::$name) = start(x.pyo)
-        function $(esc(:next))(x::$name, state)
-            new_val, new_state = next(x.pyo, state)
-            return pandas_wrap(new_val), new_state
+
+        # This won't work until PyCall is updated to support
+        # the Julia 1.0 iteration protocol.
+        function Base.iterate(x::$name, state...)
+            res = Base.iterate(x.pyo, state...)
+            if res === nothing
+                return nothing
+            else
+                value, state = res
+                return pandas_wrap(value), state
+            end
         end
-        $(esc(:done))(x::$name, state) = done(x.pyo, state)
+
         push!(pre_type_map, ($class, $name))
     end
 end
@@ -178,14 +187,17 @@ macro pyasvec(class)
         end
     else
         length_expr = quote
-            @pyattr $class $(esc(:length)) $(esc(:__len__))
+            function $(esc(:length))(x::$class)
+                x.pyo[:__len__]()
+            end
         end
     end
+
     quote
 
         $index_expr
         $length_expr
-        function $(esc(:endof))(x::$class)
+        function $(esc(:lastindex))(x::$class)
             length(x)
         end
     end
@@ -313,9 +325,9 @@ end
 
 for (jl_op, py_op, py_opᵒ) in [(:+, :__add__, :__add__), (:*, :__mul__, :__mul__),
                                (:/, :__div__, :__rdiv__), (:-, :__sub__, :__rsub__),
-                               (:(==), :__eq__, :__eq__), (:!=, :__ne__, :__ne__), 
-                               (:>, :__gt__, :__lt__), (:<, :__lt__, :__gt__), 
-                               (:>=, :__ge__, :__le__), (:<=, :__le__, :__ge__), 
+                               (:(==), :__eq__, :__eq__), (:!=, :__ne__, :__ne__),
+                               (:>, :__gt__, :__lt__), (:<, :__lt__, :__gt__),
+                               (:>=, :__ge__, :__le__), (:<=, :__le__, :__ge__),
                                (:&, :__and__, :__and__), (:|, :__or__, :__or__)]
     @eval begin
         function $(jl_op)(x::PandasWrapped, y)
