@@ -429,6 +429,22 @@ function DataFrame(obj)
     end
 end
 
+function has_named_attr(x::Index, s)
+    return x.pyo[:__contains__](Symbol(s))
+end
 
+named_index(x::DataFrame) = columns(x)
+named_index(x::Series) = index(x)
+
+function Base.getproperty(x::Union{DataFrame, Series}, s::Symbol)
+    if s == :pyo
+        return getfield(x, s)
+    end
+    if has_named_attr(named_index(x), s)
+        return x[s]
+    else
+        return getfield(x, s)
+    end
+end
 
 end
