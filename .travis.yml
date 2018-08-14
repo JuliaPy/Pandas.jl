@@ -4,8 +4,8 @@ sudo: required
 os:
   - linux
 julia:
-  - 0.6
-  - nightly
+  - 0.7
+  - 1.0
 notifications:
   email: false
 before_install:
