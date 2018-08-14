@@ -3,6 +3,8 @@ Pandas.jl
 
 ![Pandas.jl logo](https://storage.googleapis.com/malmaud-stuff/pandas_logo.png?version=2)
 
+[![Travis status](https://travis-ci.org/JuliaPy/Pandas.jl.svg?branch=master)](https://travis-ci.org/JuliaPy/Pandas.jl)
+
 This package provides a Julia interface to the excellent [Pandas](http://pandas.pydata.org/pandas-docs/stable/) package. It sticks closely to the Pandas API. One exception is that integer-based indexing is automatically converted from Python's 0-based indexing to Julia's 1-based indexing.
 
 Installation
@@ -79,7 +81,7 @@ Name: age, dtype: int64
 
 >> mean(groupby(df3, "age")) #Or groupby(df, "age3") |> mean
      income
-age        
+age
 27       73
 29       87
 

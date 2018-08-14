@@ -2,7 +2,6 @@ __precompile__(true)
 module Pandas
 
 using PyCall
-using PyPlot
 using Lazy
 using Compat
 using TableTraits
@@ -15,7 +14,6 @@ import Base: getindex, setindex!, length, size, show, merge, convert,
  ==, >, <, >=, <=, !=, &, |
 import Statistics: mean, std, var, cov, median, quantile
 
-import PyPlot.plot
 
 include("exports.jl")
 
