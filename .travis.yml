@@ -11,6 +11,6 @@ notifications:
 before_install:
   - (sudo apt-get -qq update && sudo apt-get install -y python python-pip && sudo pip install pandas && sudo pip install matplotlib)
 script:
-    - julia -e 'Pkg.clone(pwd())'
-    - julia -e 'Pkg.build("Pandas")'
-    - julia -e 'Pkg.test("Pandas")'
+    - julia -e 'using Pkg; Pkg.clone(pwd())'
+    - julia -e 'using Pkg; Pkg.build("Pandas")'
+    - julia -e 'using Pkg; Pkg.test("Pandas")'
