@@ -420,10 +420,11 @@ end
 include("tabletraits.jl")
 
 function DataFrame(obj)
-    if TableTraits.isiterabletable(obj)
-        _construct_pandas_from_iterabletable(obj)
+    y = _construct_pandas_from_iterabletable(obj)
+    if y===nothing
+        return invoke(DataFrame, Tuple{Vararg{Any}}, obj)
     else
-        invoke(DataFrame, Tuple{Vararg{Any}}, obj)
+        return y
     end
 end
 

@@ -12,9 +12,7 @@ df = read_csv(joinpath(dirname(@__FILE__), "test.csv"))
 typeof(df)
 @test isa(df, Pandas.DataFrame)
 
-# Disabling this test until the 'queryverse' is fully
-# 1.0-compatible.
-# include("test_tabletraits.jl")
+include("test_tabletraits.jl")
 
 @test !isempty(df)
 empty!(df)

@@ -1,7 +1,8 @@
+using IteratorInterfaceExtensions
 using TableTraitsUtils
 import DataValues
 
-TableTraits.isiterable(x::DataFrame) = true
+IteratorInterfaceExtensions.isiterable(x::DataFrame) = true
 TableTraits.isiterabletable(x::DataFrame) = true
 
 function TableTraits.getiterator(df::DataFrame)
@@ -13,16 +14,18 @@ function TableTraits.getiterator(df::DataFrame)
 end
 
 function _construct_pandas_from_iterabletable(source)
-    columns, column_names = create_columns_from_iterabletable(source)
-    cols = Dict(i[1]=>i[2] for i in zip(column_names, columns))
+    y = create_columns_from_iterabletable(source, errorhandling=:returnvalue)
+    y===nothing && return nothing
+    columns, column_names = y[1], y[2]
+    cols = Dict{Symbol,Any}(i[1]=>i[2] for i in zip(column_names, columns))
 
-    for (k,v) in cols
+    for (k,v) in pairs(cols)
         if eltype(v)<:DataValues.DataValue
             T = eltype(eltype(v))
             if T<:AbstractFloat
                 cols[k] = T[get(i, NaN) for i in v]
             elseif T<:Integer
-                cols[k] = Float64[isnull(i) ? NaN : Float64(get(i)) for i in v]
+                cols[k] = Float64[DataValues.isna(i) ? NaN : Float64(get(i)) for i in v]
             else
                 throw(ArgumentError("Can't create a Pandas.DataFrame from a source that has missing data."))
             end
