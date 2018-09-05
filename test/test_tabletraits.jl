@@ -1,11 +1,12 @@
 using Pandas
-using NamedTuples
+using IteratorInterfaceExtensions
+using TableTraits
 using DataValues
-using Base.Test
+using Test
 
 @testset "TableTraits" begin
 
-table_array = [@NT(a=1, b="John", c=3.2), @NT(a=2, b="Sally", c=5.8)]
+table_array = [(a=1, b="John", c=3.2), (a=2, b="Sally", c=5.8)]
 
 df = DataFrame(table_array)
 
@@ -16,26 +17,26 @@ df = DataFrame(table_array)
 
 @test TableTraits.isiterabletable(df) == true
 
-it = TableTraits.getiterator(df)
+it = IteratorInterfaceExtensions.getiterator(df)
 
-@test eltype(it) == @NT(a::Int, b::String, c::Float64)
+@test eltype(it) == NamedTuple{(:a,:b,:c),Tuple{Int,String,Float64}}
 
 it_collected = collect(it)
 
-@test eltype(it_collected) == @NT(a::Int, b::String, c::Float64)
+@test eltype(it_collected) == NamedTuple{(:a,:b,:c),Tuple{Int,String,Float64}}
 @test length(it_collected) == 2
-@test it_collected[1] == @NT(a=1, b="John", c=3.2)
-@test it_collected[2] == @NT(a=2, b="Sally", c=5.8)
+@test it_collected[1] == (a=1, b="John", c=3.2)
+@test it_collected[2] == (a=2, b="Sally", c=5.8)
 
-table_array2 = [@NT(a=1, b=DataValue("John"), c=3.2), @NT(a=2, b=DataValue("Sally"), c=5.8)]
+table_array2 = [(a=1, b=DataValue("John"), c=3.2), (a=2, b=DataValue("Sally"), c=5.8)]
 
 @test_throws ArgumentError DataFrame(table_array2)
 
-table_array3 = [@NT(a=DataValue{Int}(), b="John", c=DataValue(3.2)), @NT(a=DataValue(2), b="Sally", c=DataValue{Float64}())]
+table_array3 = [(a=DataValue{Int}(), b="John", c=DataValue(3.2)), (a=DataValue(2), b="Sally", c=DataValue{Float64}())]
 
 df3 = DataFrame(table_array3)
 
-it3_collected = collect(TableTraits.getiterator(df3))
+it3_collected = collect(IteratorInterfaceExtensions.getiterator(df3))
 
 @test length(it3_collected) == 2
 @test isnan(it3_collected[1].a)
