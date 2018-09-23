@@ -9,7 +9,7 @@ julia:
 notifications:
   email: false
 before_install:
-  - (sudo apt-get -qq update && sudo apt-get install -y python3 python3-pip && sudo pip3 install pandas && sudo pip3 install matplotlib)
+  - (sudo apt-get -qq update && sudo apt-get install -y python3 python3-pip && sudo pip3 install pandas)
 script:
     - julia -e 'using Pkg; Pkg.clone(pwd())'
     - julia -e 'using Pkg; Pkg.build("Pandas")'
