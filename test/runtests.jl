@@ -30,3 +30,4 @@ x = Series([3,5], index=[:a, :b])
 @test values(x+1) == [4, 6]
 @test sum(x) == 8
 @test eltype(x) == Int64
+@test all(iloc(x)[1:2]==x)

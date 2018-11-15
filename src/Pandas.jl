@@ -111,7 +111,7 @@ fix_arg(x) = x
 
 function fix_arg(x, offset)
     if offset
-        fix_arg(x-1)
+        fix_arg(x .- 1)
     else
         fix_arg(x)
     end
