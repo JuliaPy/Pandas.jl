@@ -6,9 +6,10 @@ IteratorInterfaceExtensions.isiterable(x::DataFrame) = true
 TableTraits.isiterabletable(x::DataFrame) = true
 
 function TableTraits.getiterator(df::DataFrame)
-    col_names = [Symbol(i) for i in Pandas.columns(df)]
+    col_names_raw = [i for i in Pandas.columns(df)]
+    col_names = Symbol.(col_names_raw)
 
-    column_data = [eltype(df[i])==String ? [df[i][j] for j=1:length(df)] : values(df[i]) for i in col_names]
+    column_data = [eltype(df[i])==String ? [df[i][j] for j=1:length(df)] : values(df[i]) for i in col_names_raw]
 
     return create_tableiterator(column_data, col_names)
 end
