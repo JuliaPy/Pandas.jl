@@ -70,7 +70,7 @@ quot(x) = Expr(:quote, x)
 function Base.Array(x::PandasWrapped)
     c = np[:asarray](x.pyo)
     if typeof(c).parameters[1] == PyObject
-        out = Array{Any}(size(x))
+        out = Array{Any}(undef, size(x))
         for idx in eachindex(out)
             out[idx] = convert(PyAny, c[idx])
         end
