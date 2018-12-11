@@ -216,11 +216,12 @@ end
 @pyattr GroupBy app apply
 @pyattr Rolling app apply
 
-pyattr_set([GroupBy, SeriesGroupBy, Rolling], :mean, :std, :agg, :aggregate, :median,
+pyattr_set([GroupBy, SeriesGroupBy], :mean, :std, :agg, :aggregate, :median,
 :var, :ohlc, :transform, :groups, :indices, :get_group, :hist,  :plot, :count)
 
+pyattr_set([Rolling], :agg, :aggregate, :apply, :corr, :count, :cov, :kurt, :max, :mean, :median, :min, :ndim, :quantile, :skew, :std, :sum, :validate, :var)
+
 @pyattr GroupBy siz size
-@pyattr Rolling siz size
 
 pyattr_set([DataFrame, Series], :T, :abs, :align, :any, :argsort, :asfreq, :asof,
 :boxplot, :clip, :clip_lower, :clip_upper, :corr, :corrwith, :count, :cov,
@@ -236,7 +237,7 @@ pyattr_set([DataFrame, Series], :T, :abs, :align, :any, :argsort, :asfreq, :asof
 :to_sql, :to_string, :truncate, :tz_conert, :tz_localize, :unstack, :var, :weekday,
 :xs, :merge)
 pyattr_set([DataFrame], :groupby)
-pyattr_set([DataFrame], :rolling)
+pyattr_set([Series, DataFrame], :rolling)
 
 Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]

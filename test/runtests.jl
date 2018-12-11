@@ -31,3 +31,7 @@ x = Series([3,5], index=[:a, :b])
 @test sum(x) == 8
 @test eltype(x) == Int64
 @test all(iloc(x)[1:2]==x)
+
+# Rolling
+roll = rolling(Series([1,2,3,4,5]), 3)
+@test isequal(values(mean(roll)), [NaN, NaN, 2.0, 3.0, 4.0])
