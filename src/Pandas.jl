@@ -70,7 +70,7 @@ quot(x) = Expr(:quote, x)
 function Base.Array(x::PandasWrapped)
     c = np[:asarray](x.pyo)
     if typeof(c).parameters[1] == PyObject
-        out = Array{Any}(size(x))
+        out = Array{Any}(undef, size(x))
         for idx in eachindex(out)
             out[idx] = convert(PyAny, c[idx])
         end
@@ -211,11 +211,15 @@ end
 @pytype Index ()->pandas_raw[:core][:index]["Index"]
 @pytype GroupBy ()->pandas_raw[:core][:groupby]["DataFrameGroupBy"]
 @pytype SeriesGroupBy ()->pandas_raw[:core][:groupby]["SeriesGroupBy"]
+@pytype Rolling () -> pandas_raw[:core][:window]["Rolling"]
 
 @pyattr GroupBy app apply
+@pyattr Rolling app apply
 
 pyattr_set([GroupBy, SeriesGroupBy], :mean, :std, :agg, :aggregate, :median,
 :var, :ohlc, :transform, :groups, :indices, :get_group, :hist,  :plot, :count)
+
+pyattr_set([Rolling], :agg, :aggregate, :apply, :corr, :count, :cov, :kurt, :max, :mean, :median, :min, :ndim, :quantile, :skew, :std, :sum, :validate, :var)
 
 @pyattr GroupBy siz size
 
@@ -233,6 +237,7 @@ pyattr_set([DataFrame, Series], :T, :abs, :align, :any, :argsort, :asfreq, :asof
 :to_sql, :to_string, :truncate, :tz_conert, :tz_localize, :unstack, :var, :weekday,
 :xs, :merge)
 pyattr_set([DataFrame], :groupby)
+pyattr_set([Series, DataFrame], :rolling)
 
 Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
@@ -266,6 +271,7 @@ end
 @pyasvec DataFrame
 @pyasvec Index
 @pyasvec GroupBy
+@pyasvec Rolling
 
 Base.ndims(df::Union{DataFrame, Series}) = length(size(df))
 
