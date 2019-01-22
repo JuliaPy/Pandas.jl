@@ -85,7 +85,6 @@ function Base.values(x::PandasWrapped)
     # Zero-copy conversion to a Julia native type is possible
     x_kind = x.pyo[:dtype][:kind]
     if x_kind in ["i", "u", "f", "b"]
-        println("Fast path")
         pyarray = convert(PyArray, x.pyo["values"])
         unsafe_wrap(Array, pyarray.data, size(pyarray))
     else  # Convert element by element otherwise
