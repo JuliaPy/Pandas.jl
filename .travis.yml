@@ -14,6 +14,8 @@ addons:
       - python3
       - python3-pip
 before_install:
+  - sudo pip3 install numpy
+  - sudo pip3 install Cython
   - sudo pip3 install pandas
 script:
     - julia -e 'using Pkg; Pkg.clone(pwd())'
