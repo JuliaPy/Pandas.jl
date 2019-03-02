@@ -68,7 +68,7 @@ end
 quot(x) = Expr(:quote, x)
 
 function Base.Array(x::PandasWrapped)
-    c = np[:asarray](x.pyo)
+    c = np.asarray(x.pyo)
     if typeof(c).parameters[1] == PyObject
         out = Array{Any}(undef, size(x))
         for idx in eachindex(out)
@@ -83,9 +83,9 @@ end
 
 function Base.values(x::PandasWrapped)
     # Zero-copy conversion to a Julia native type is possible
-    x_kind = x.pyo[:dtype][:kind]
+    x_kind = x.pyo.dtype.kind
     if x_kind in ["i", "u", "f", "b"]
-        pyarray = convert(PyArray, x.pyo["values"])
+        pyarray = convert(PyArray, x.pyo."values")
         unsafe_wrap(Array, pyarray.data, size(pyarray))
     else  # Convert element by element otherwise
         collect(x)
@@ -132,7 +132,7 @@ function pyattr(class, jl_method, py_method)
     quote
         function $(esc(jl_method))(pyt::$class, args...; kwargs...)
             new_args = fix_arg.(args)
-            method = pyt.pyo[$(string(py_method))]
+            method = pyt.pyo.$(string(py_method))
             pyo = pycall(method, PyObject, new_args...; kwargs...)
             wrapped = pandas_wrap(pyo)
         end
@@ -169,7 +169,7 @@ macro pyasvec(class)
             offset = should_offset(pyt, args...)
             new_args = tuple([fix_arg(arg, offset) for arg in args]...)
             new_args = (length(new_args)==1 ? new_args[1] : new_args)
-            pyo = pycall(pyt.pyo[:__getitem__], PyObject, new_args)
+            pyo = pycall(pyt.pyo.__getitem__, PyObject, new_args)
             pandas_wrap(pyo)
         end
 
@@ -177,9 +177,9 @@ macro pyasvec(class)
             offset = should_offset(pyt, idxs...)
             new_idx = [fix_arg(idx, offset) for idx in idxs]
             if length(new_idx) > 1
-                pandas_wrap(pycall(pyt.pyo[:__setitem__], PyObject, tuple(new_idx...), value))
+                pandas_wrap(pycall(pyt.pyo.__setitem__, PyObject, tuple(new_idx...), value))
             else
-                pandas_wrap(pycall(pyt.pyo[:__setitem__], PyObject, new_idx[1], value))
+                pandas_wrap(pycall(pyt.pyo.__setitem__, PyObject, new_idx[1], value))
             end
         end
     end
@@ -187,13 +187,13 @@ macro pyasvec(class)
     if class in [:Iloc, :Loc, :Ix]
         length_expr = quote
             function $(esc(:length))(x::$class)
-                x.pyo[:obj][:__len__]()
+                x.pyo.obj.__len__()
             end
         end
     else
         length_expr = quote
             function $(esc(:length))(x::$class)
-                x.pyo[:__len__]()
+                x.pyo.__len__()
             end
         end
     end
@@ -209,16 +209,16 @@ macro pyasvec(class)
 end
 
 
-@pytype DataFrame ()->pandas_raw[:core][:frame]["DataFrame"]
-@pytype Iloc ()->pandas_raw[:core][:indexing]["_iLocIndexer"]
-@pytype Loc ()->pandas_raw[:core][:indexing]["_LocIndexer"]
-@pytype Ix ()->pandas_raw[:core][:indexing]["_IXIndexer"]
-@pytype Series ()->pandas_raw[:core][:series]["Series"]
-@pytype MultiIndex ()->pandas_raw[:core][:index]["MultiIndex"]
-@pytype Index ()->pandas_raw[:core][:index]["Index"]
-@pytype GroupBy ()->pandas_raw[:core][:groupby]["DataFrameGroupBy"]
-@pytype SeriesGroupBy ()->pandas_raw[:core][:groupby]["SeriesGroupBy"]
-@pytype Rolling () -> pandas_raw[:core][:window]["Rolling"]
+@pytype DataFrame ()->pandas_raw.core.frame."DataFrame"
+@pytype Iloc ()->pandas_raw.core.indexing."_iLocIndexer"
+@pytype Loc ()->pandas_raw.core.indexing."_LocIndexer"
+@pytype Ix ()->pandas_raw.core.indexing."_IXIndexer"
+@pytype Series ()->pandas_raw.core.series."Series"
+@pytype MultiIndex ()->pandas_raw.core.index."MultiIndex"
+@pytype Index ()->pandas_raw.core.index."Index"
+@pytype GroupBy ()->pandas_raw.core.groupby."DataFrameGroupBy"
+@pytype SeriesGroupBy ()->pandas_raw.core.groupby."SeriesGroupBy"
+@pytype Rolling () -> pandas_raw.core.window."Rolling"
 
 @pyattr GroupBy app apply
 @pyattr Rolling app apply
@@ -246,12 +246,12 @@ pyattr_set([DataFrame, Series], :T, :abs, :align, :any, :argsort, :asfreq, :asof
 pyattr_set([DataFrame], :groupby)
 pyattr_set([Series, DataFrame], :rolling)
 
-Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo[:obj][:shape]
+Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo.obj.shape
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
-Base.size(df::PandasWrapped) = df.pyo[:shape]
+Base.size(df::PandasWrapped) = df.pyo.shape
 
-Base.isempty(df::PandasWrapped) = df.pyo[:empty]
-Base.empty!(df::PandasWrapped) = df.pyo[:drop](df.pyo[:index], inplace=true)
+Base.isempty(df::PandasWrapped) = df.pyo.empty
+Base.empty!(df::PandasWrapped) = df.pyo.drop(df.pyo.index, inplace=true)
 
 should_offset(::Any, args...) = false
 should_offset(::Union{Iloc, Index}, args...) = true
@@ -267,7 +267,7 @@ end
 
 for attr in [:index, :columns]
     @eval function $attr(x::PandasWrapped)
-        pandas_wrap(x.pyo[$(string(attr))])
+        pandas_wrap(x.pyo.$(string(attr)))
     end
 end
 
@@ -304,7 +304,7 @@ for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_ta
 end
 
 function show(io::IO, df::PandasWrapped)
-    s = df.pyo[:__str__]()
+    s = df.pyo.__str__()
     println(io, s)
 end
 
@@ -328,7 +328,7 @@ end
 
 for m in [:from_arrays, :from_tuples]
     @eval function $m(args...; kwargs...)
-        f = pandas_raw["MultiIndex"][string($(quot(m)))]
+        f = pandas_raw."MultiIndex"[string($(quot(m)))]
         res = pycall(f, PyObject, args...; kwargs...)
         pandas_wrap(res)
     end
@@ -342,7 +342,7 @@ for (jl_op, py_op, py_opᵒ) in [(:+, :__add__, :__add__), (:*, :__mul__, :__mul
                                (:&, :__and__, :__and__), (:|, :__or__, :__or__)]
     @eval begin
         function $(jl_op)(x::PandasWrapped, y)
-            res = x.pyo[$(string(py_op))](y)
+            res = x.pyo.$(string(py_op))(y)
             pandas_wrap(res)
         end
 
@@ -351,7 +351,7 @@ for (jl_op, py_op, py_opᵒ) in [(:+, :__add__, :__add__), (:*, :__mul__, :__mul
         end
 
         function $(jl_op)(y, x::PandasWrapped)
-            res = x.pyo[$(string(py_opᵒ))](y)
+            res = x.pyo.$(string(py_opᵒ))(y)
             pandas_wrap(res)
         end
     end
@@ -359,20 +359,20 @@ end
 
 for op in [(:-, :__neg__)]
     @eval begin
-        $(op[1])(x::PandasWrapped) = pandas_wrap(x.pyo[$(quot(op[2]))]())
+        $(op[1])(x::PandasWrapped) = pandas_wrap(x.pyo.$(quot(op[2]))())
     end
 end
 
 function setcolumns!(df::PandasWrapped, new_columns)
-    df.pyo[:__setattr__]("columns", new_columns)
+    df.pyo.__setattr__("columns", new_columns)
 end
 
 function deletecolumn!(df::DataFrame, column)
-    df.pyo[:__delitem__](column)
+    df.pyo.__delitem__(column)
 end
 
-name(s::Series) = s.pyo[:name]
-name!(s::Series, name) = s.pyo[:name] = name
+name(s::Series) = s.pyo.name
+name!(s::Series, name) = s.pyo.name = name
 
 include("operators_v6.jl")
 
@@ -381,17 +381,17 @@ function DataFrame(pairs::Pair...)
 end
 
 function index!(df::PandasWrapped, new_index)
-    df.pyo[:index] = new_index
+    df.pyo.index = new_index
     df
 end
 
 function Base.eltype(s::Series)
     dtype_map = Dict(
-        np[:dtype]("int64") => Int64,
-        np[:dtype]("float64") => Float64,
-        np[:dtype]("object") => String,
+        np.dtype("int64") => Int64,
+        np.dtype("float64") => Float64,
+        np.dtype("object") => String,
     )
-    get(dtype_map, s.pyo[:dtype], Any)
+    get(dtype_map, s.pyo.dtype, Any)
 end
 
 function Base.eltype(df::DataFrame)
@@ -411,11 +411,11 @@ function Base.map(f::Function, s::Series)
 end
 
 function Base.map(x, s::Series; na_action=nothing)
-    pandas_wrap(s.pyo[:map](x, na_action))
+    pandas_wrap(s.pyo.map(x, na_action))
 end
 
 function Base.get(df::PandasWrapped, key, default)
-    pandas_wrap(df.pyo[:get](key, default=default))
+    pandas_wrap(df.pyo.get(key, default=default))
 end
 
 function Base.getindex(s::Series, c::CartesianIndex{1})
@@ -423,11 +423,11 @@ function Base.getindex(s::Series, c::CartesianIndex{1})
 end
 
 function Base.copy(df::PandasWrapped)
-    pandas_wrap(df.pyo[:copy]())
+    pandas_wrap(df.pyo.copy())
 end
 
 function !(df::PandasWrapped)
-    pandas_wrap(df.pyo[:__neg__]())
+    pandas_wrap(df.pyo.__neg__())
 end
 
 include("tabletraits.jl")
@@ -442,7 +442,7 @@ function DataFrame(obj)
 end
 
 function has_named_attr(x::Index, s)
-    return x.pyo[:__contains__](Symbol(s))
+    return x.pyo.__contains__(Symbol(s))
 end
 
 named_index(x::DataFrame) = columns(x)

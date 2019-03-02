@@ -1,5 +1,5 @@
 julia 0.7
-PyCall 1.7.2
+PyCall 1.90.0
 Lazy 0.11.4
 Compat 0.17
 IteratorInterfaceExtensions 0.1.1
