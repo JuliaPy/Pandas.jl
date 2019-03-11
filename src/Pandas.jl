@@ -296,7 +296,7 @@ for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_ta
     :read_sql_query]
     @eval begin
         function $m(args...; kwargs...)
-            method = pandas_raw[$(string(m))]
+            method = pandas_raw.$(string(m))
             result = pycall(method, PyObject, args...; kwargs...)
             pandas_wrap(result)
         end
