@@ -192,7 +192,12 @@ tz_localize,
 unstack,
 var,
 weekday,
-read_sql
+read_sql,
+read_hdf,
+HDFStore,
+info,
+put,
+walk
 
 if !isdefined(Base, :drop)
     export drop

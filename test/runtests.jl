@@ -35,3 +35,12 @@ x = Series([3,5], index=[:a, :b])
 # Rolling
 roll = rolling(Series([1,2,3,4,5]), 3)
 @test isequal(values(mean(roll)), [NaN, NaN, 2.0, 3.0, 4.0])
+
+# HDF
+mktempdir() do dir
+    store = HDFStore("$(dir)/store.h5")
+    x = Series(["a", "b"])
+    store["x"] = x
+    x_fromstore = store["x"]
+    @test values(x_fromstore) == ["a", "b"]
+end
