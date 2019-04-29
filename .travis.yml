@@ -1,8 +1,8 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
-sudo: required
 os:
   - linux
+dist: xenial
 julia:
   - 0.7
   - 1.0
@@ -14,7 +14,7 @@ addons:
       - python3
       - python3-pip
 before_install:
-  - sudo pip3 install numpy
-  - sudo pip3 install Cython
-  - sudo pip3 install pandas
-  - sudo pip3 install tables
+  - pip3 install --user --upgrade pip
+  - pip --version
+  - pip install --user pandas
+  - pip install --user tables
