@@ -24,6 +24,7 @@ const pandas_raw = PyNULL()
 function __init__()
     copy!(np, pyimport_conda("numpy", "numpy"))
     copy!(pandas_raw, pyimport_conda("pandas", "pandas"))
+    empty!(type_map)  # for behaving nicely in system image
     for (pandas_expr, julia_type) in pre_type_map
         type_map[pandas_expr()] = julia_type
     end
