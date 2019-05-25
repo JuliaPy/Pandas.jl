@@ -1,3 +1,4 @@
 src/scratch.jl
 *.png
 .DS_Store
+.vscode
