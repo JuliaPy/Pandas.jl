@@ -14,6 +14,16 @@ function TableTraits.getiterator(df::DataFrame)
     return create_tableiterator(column_data, col_names)
 end
 
+TableTraits.supports_get_columns_copy_using_missing(df::DataFrame) = true
+
+function TableTraits.get_columns_copy_using_missing(df::Pandas.DataFrame)
+    # return a named tuple of columns here
+    col_names_raw = [i for i in Pandas.columns(df)]
+    col_names = Symbol.(col_names_raw)
+    cols = (Array(eltype(df[i])==String ? [df[i][j] for j=1:length(df)] : df[i]) for i in col_names_raw)
+    return NamedTuple{tuple(col_names...)}(tuple(cols...))
+end
+
 function _construct_pandas_from_iterabletable(source)
     y = create_columns_from_iterabletable(source, errorhandling=:returnvalue)
     y===nothing && return nothing

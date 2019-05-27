@@ -28,6 +28,10 @@ it_collected = collect(it)
 @test it_collected[1] == (a=1, b="John", c=3.2)
 @test it_collected[2] == (a=2, b="Sally", c=5.8)
 
+@test TableTraits.supports_get_columns_copy_using_missing(df) == true
+cols = TableTraits.get_columns_copy_using_missing(df)
+@test cols == (a=[1,2], b=["John", "Sally"], c=[3.2, 5.8])
+
 table_array2 = [(a=1, b=DataValue("John"), c=3.2), (a=2, b=DataValue("Sally"), c=5.8)]
 
 @test_throws ArgumentError DataFrame(table_array2)
@@ -45,5 +49,8 @@ it3_collected = collect(IteratorInterfaceExtensions.getiterator(df3))
 @test it3_collected[2].a == 2
 @test it3_collected[2].b == "Sally"
 @test isnan(it3_collected[2].c)
+
+cols3 = TableTraits.get_columns_copy_using_missing(df3)
+@test isequal(cols3, (a=[NaN,2.], b=["John", "Sally"], c=[3.2, NaN]))
 
 end
