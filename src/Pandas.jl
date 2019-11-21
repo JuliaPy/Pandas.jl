@@ -313,6 +313,15 @@ function show(io::IO, df::PandasWrapped)
     println(io, s)
 end
 
+function show(io::IO, ::MIME"text/html", df::PandasWrapped)
+    obj = df.pyo
+    try
+        return println(io, obj.to_html())
+    catch
+        return show(io, df)
+    end
+end
+
 function query(df::DataFrame, s::AbstractString)
     pandas_wrap(py"$(df.pyo).query($s)"o)
 end
