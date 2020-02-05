@@ -186,7 +186,7 @@ macro pyasvec(class)
         end
     end
 
-    if class in [:Iloc, :Loc, :Ix]
+    if class in [:Iloc, :Loc]
         length_expr = quote
             function $(esc(:length))(x::$class)
                 x.pyo.obj.__len__()
@@ -214,10 +214,9 @@ end
 @pytype DataFrame ()->pandas_raw.core.frame."DataFrame"
 @pytype Iloc ()->pandas_raw.core.indexing."_iLocIndexer"
 @pytype Loc ()->pandas_raw.core.indexing."_LocIndexer"
-@pytype Ix ()->pandas_raw.core.indexing."_IXIndexer"
 @pytype Series ()->pandas_raw.core.series."Series"
-@pytype MultiIndex ()->pandas_raw.core.index."MultiIndex"
-@pytype Index ()->pandas_raw.core.index."Index"
+@pytype MultiIndex ()->pandas_raw.core.indexes.multi."MultiIndex"
+@pytype Index ()->pandas_raw.core.indexes.multi."Index"
 @pytype GroupBy ()->pandas_raw.core.groupby."DataFrameGroupBy"
 @pytype SeriesGroupBy ()->pandas_raw.core.groupby."SeriesGroupBy"
 @pytype Rolling () -> pandas_raw.core.window."Rolling"
@@ -250,7 +249,7 @@ pyattr_set([DataFrame], :groupby)
 pyattr_set([Series, DataFrame], :rolling)
 pyattr_set([HDFStore], :put, :append, :get, :select, :info, :keys, :groups, :walk, :close)
 
-Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo.obj.shape
+Base.size(x::Union{Loc, Iloc}) = x.pyo.obj.shape
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
 Base.size(df::PandasWrapped) = df.pyo.shape
 
@@ -277,7 +276,6 @@ end
 
 @pyasvec Series
 @pyasvec Loc
-@pyasvec Ix
 @pyasvec Iloc
 @pyasvec DataFrame
 @pyasvec Index
