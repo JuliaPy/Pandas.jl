@@ -30,11 +30,18 @@ function __init__()
     end
 end
 
+"""
+    version()
+
+Returns the version of the underlying Python Pandas library as a VersionNumber.
+"""
+version() = VersionNumber(pandas_raw.__version__)
+
 const pre_type_map = []
 
 # Maps a python object corresponding to a Pandas class to a Julia type which
 # wraps that class.
-const type_map = Dict{PyObject, Type}()
+const type_map = Dict()
 
 abstract type PandasWrapped end
 
@@ -102,6 +109,7 @@ to that class.
 """
 function pandas_wrap(pyo::PyObject)
     for (pyt, pyv) in type_map
+        pyt === nothing && continue
         if pyisinstance(pyo, pyt)
             return pyv(pyo)
         end
@@ -185,8 +193,7 @@ macro pyasvec(class)
             end
         end
     end
-
-    if class in [:Iloc, :Loc]
+    if class in [:Iloc, :Loc, :Ix]
         length_expr = quote
             function $(esc(:length))(x::$class)
                 x.pyo.obj.__len__()
@@ -213,10 +220,11 @@ end
 
 @pytype DataFrame ()->pandas_raw.core.frame."DataFrame"
 @pytype Iloc ()->pandas_raw.core.indexing."_iLocIndexer"
-@pytype Loc ()->pandas_raw.core.indexing."_LocIndexer"
 @pytype Series ()->pandas_raw.core.series."Series"
-@pytype MultiIndex ()->pandas_raw.core.indexes.multi."MultiIndex"
-@pytype Index ()->pandas_raw.core.indexes.multi."Index"
+@pytype Ix ()->version() < VersionNumber(1) ? pandas_raw.core.indexing."_IXIndexer" : nothing
+@pytype MultiIndex ()->version() < VersionNumber(1) ? pandas_raw.core.index."MultiIndex" : pandas_raw.core.indexes.multi."MultiIndex"
+@pytype Index ()->version() < VersionNumber(1) ? pandas_raw.core.index."Index" : pandas_raw.core.indexes.multi."Index" 
+@pytype Loc ()->pandas_raw.core.indexing."_LocIndexer"
 @pytype GroupBy ()->pandas_raw.core.groupby."DataFrameGroupBy"
 @pytype SeriesGroupBy ()->pandas_raw.core.groupby."SeriesGroupBy"
 @pytype Rolling () -> pandas_raw.core.window."Rolling"
@@ -249,7 +257,7 @@ pyattr_set([DataFrame], :groupby)
 pyattr_set([Series, DataFrame], :rolling)
 pyattr_set([HDFStore], :put, :append, :get, :select, :info, :keys, :groups, :walk, :close)
 
-Base.size(x::Union{Loc, Iloc}) = x.pyo.obj.shape
+Base.size(x::Union{Loc, Iloc, Ix}) = x.pyo.obj.shape
 Base.size(df::PandasWrapped, i::Integer) = size(df)[i]
 Base.size(df::PandasWrapped) = df.pyo.shape
 
@@ -276,6 +284,9 @@ end
 
 @pyasvec Series
 @pyasvec Loc
+#if version() < 1
+    @pyasvec Ix
+#end
 @pyasvec Iloc
 @pyasvec DataFrame
 @pyasvec Index
