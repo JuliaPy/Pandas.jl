@@ -8,6 +8,11 @@ age[2] = 31
 
 query(df, :(age!=27))  # Issue #26
 
+text = repr(MIME("text/html"), df)
+@test text isa String
+@test occursin("<table", text)
+@test occursin("age", text)
+
 df = read_csv(joinpath(dirname(@__FILE__), "test.csv"))
 typeof(df)
 @test isa(df, Pandas.DataFrame)
