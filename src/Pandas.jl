@@ -284,9 +284,7 @@ end
 
 @pyasvec Series
 @pyasvec Loc
-#if version() < 1
-    @pyasvec Ix
-#end
+@pyasvec Ix
 @pyasvec Iloc
 @pyasvec DataFrame
 @pyasvec Index
