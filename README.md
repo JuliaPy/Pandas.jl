@@ -119,13 +119,13 @@ Setting and getting individual elements of a dataframe or series is slow however
 
 ```julia
 >> x_series = Series(randn(10000))
->> @time x[1]
+>> @time x_series[1]
 elapsed time: 0.000121945 seconds (2644 bytes allocated)
 >> x_values = values(x_series)
 >> @time x_values[1]
 elapsed time: 2.041e-6 seconds (64 bytes allocated)
 >> x_native = randn(10000)
->> @time x[1]
+>> @time x_native[1]
 elapsed time: 2.689e-6 seconds (64 bytes allocated)
 ```
 
