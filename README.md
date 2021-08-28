@@ -1,7 +1,7 @@
 Pandas.jl
 =============
 
-![Pandas.jl logo](https://storage.googleapis.com/malmaud-stuff/pandas_logo.png?version=2)
+![Pandas.jl logo](https://storage.googleapis.com/malmaud-stuff/pandas_logo.png)
 
 [![Travis status](https://travis-ci.org/JuliaPy/Pandas.jl.svg?branch=master)](https://travis-ci.org/JuliaPy/Pandas.jl)
 
@@ -10,26 +10,17 @@ This package provides a Julia interface to the excellent [Pandas](http://pandas.
 Installation
 --------------
 
-You must have Pandas installed. Usually you can do that on the command line by typing
-
-```
-sudo pip install pandas
-```
-
-It also comes with the Anaconda and Enthought Python distributions.
-
-Then in Julia, type
+Simply install the `Pandas` package using the Julia package manager. From the Julia REPL:
 
 ```julia
+using Pkg
 Pkg.add("Pandas")
 using Pandas
 ```
 
-No-hassle installation is also available via Docker:
+Which version of the Python Pandas library is used depends on how your installation of PyCall.jl is configured. By default, the Python Pandas library will be automatically downloaded and installed in a mininal Python installation managed by Julia and independent from any other Python distributions on your system. 
 
-```
-docker run -it malmaud/julia_pandas
-```
+See the [PyCall configuration](https://github.com/JuliaPy/PyCall.jl#specifying-the-python-version) for instructions on changing this behavior.
 
 Usage
 ---------
