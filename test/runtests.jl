@@ -35,7 +35,9 @@ x = Series([3,5], index=[:a, :b])
 @test length(x) == 2
 @test values(x+1) == [4, 6]
 @test sum(x) == 8
-@test eltype(x) == Int64
+if !Sys.iswindows()
+    @test eltype(x) == Int64
+end
 @test all(iloc(x)[1:2]==x)
 
 # Rolling
