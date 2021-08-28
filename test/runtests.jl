@@ -1,6 +1,8 @@
 using Pandas
 using Test
 import DataFrames
+using PyCall
+using Dates
 
 df = DataFrame(Dict(:name=>["a", "b"], :age=>[27, 30]))
 age = values(df.age)
@@ -50,3 +52,19 @@ julia_df = DataFrames.DataFrame(x=[1,2], y=[missing, missing])
 py_df = Pandas.DataFrame(julia_df)
 expected_df = Pandas.DataFrame(:x=>[1,2], :y=>[NaN, NaN])
 @test Pandas.equals(py_df, expected_df)
+
+# Issue #68
+py"""
+import pandas as pd
+
+def get_df():
+    df = pd.DataFrame({
+        "a":pd.to_datetime(["2021.01.15","2021.01.15","2020.04.06"])
+    })
+    return df
+"""
+
+py_df = py"get_df"()|>Pandas.DataFrame
+julia_df = DataFrames.DataFrame(py_df)
+
+@test julia_df.a == [DateTime(2021, 1, 15), DateTime(2021, 1, 15), DateTime(2020, 4, 6)]

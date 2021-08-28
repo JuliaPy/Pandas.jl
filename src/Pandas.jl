@@ -1,6 +1,7 @@
 __precompile__(true)
 module Pandas
 
+using Dates
 using PyCall
 using Lazy
 using Compat
@@ -76,9 +77,27 @@ end
 
 quot(x) = Expr(:quote, x)
 
+
+function convert_datetime_series_to_julia_vector(series)
+    N = length(series)
+    out = Array{Dates.DateTime}(undef, N)
+    for i in 1:N
+        # PyCall.jl overloads the getindex method on `series` to automatically convert 
+        # to a Julia date type.
+        out[i] = series[i]
+    end
+    return out
+end
+
+
 function Base.Array(x::PandasWrapped)
+    if typeof(x) <: Series && x.pyo.dtype == np.dtype("<M8[ns]")
+        return convert_datetime_series_to_julia_vector(x)
+    end
     c = np.asarray(x.pyo)
-    if typeof(c).parameters[1] == PyObject
+    # PyCall will automatically try to convert the result of np.asarray to a native Julia array containing native Julia objects.
+    # If it can't, it will return a PyObject or a Julia vector of PyObjects.
+    if typeof(c) == PyObject || typeof(c).parameters[1] == PyObject
         out = Array{Any}(undef, size(x))
         for idx in eachindex(out)
             out[idx] = convert(PyAny, c[idx])
