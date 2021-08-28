@@ -24,7 +24,7 @@ jobs:
           - os: windows-latest
             architecture: x86
             python-version: '3'
-            julia-version: '1'
+            julia-version: '1.6'
       fail-fast: false
     name: Test
       Julia ${{ matrix.julia-version }}
