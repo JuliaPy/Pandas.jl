@@ -34,6 +34,14 @@ function _construct_pandas_from_iterabletable(source)
         if eltype(v)<:DataValues.DataValue
             T = eltype(eltype(v))
             if T<:AbstractFloat
+
+                # Issue 71
+                # If the column is all 'missing' values, we have to decide what type to give it in Pandas.
+                # We arbitrarily default to Float64.
+                if T == Union{}
+                    T = Float64
+                end
+
                 cols[k] = T[get(i, NaN) for i in v]
             elseif T<:Integer
                 cols[k] = Float64[DataValues.isna(i) ? NaN : Float64(get(i)) for i in v]
