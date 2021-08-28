@@ -1,5 +1,6 @@
 using Pandas
 using Test
+import DataFrames
 
 df = DataFrame(Dict(:name=>["a", "b"], :age=>[27, 30]))
 age = values(df.age)
@@ -43,3 +44,9 @@ end
 # Rolling
 roll = rolling(Series([1,2,3,4,5]), 3)
 @test isequal(values(mean(roll)), [NaN, NaN, 2.0, 3.0, 4.0])
+
+# Issue #71
+julia_df = DataFrames.DataFrame(x=[1,2], y=[missing, missing])
+py_df = Pandas.DataFrame(julia_df)
+expected_df = Pandas.DataFrame(:x=>[1,2], :y=>[NaN, NaN])
+@test Pandas.equals(py_df, expected_df)
