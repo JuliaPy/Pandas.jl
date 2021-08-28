@@ -196,7 +196,8 @@ read_hdf,
 HDFStore,
 info,
 put,
-walk
+walk,
+equals
 
 if !isdefined(Base, :drop)
     export drop
