@@ -19,7 +19,7 @@ jobs:
           - windows-latest
         architecture: [x64]
         python-version: ['3']
-        julia-version: ['1.0', '1.5', 'nightly']
+        julia-version: ['1.6', 'nightly']
         include:
           - os: windows-latest
             architecture: x86
@@ -39,7 +39,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install pandas tables
+      - run: python -m pip install pandas
 
       - name: Setup julia
         uses: julia-actions/setup-julia@v1
