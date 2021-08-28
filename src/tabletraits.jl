@@ -1,5 +1,6 @@
 using IteratorInterfaceExtensions
 using TableTraitsUtils
+using OrderedCollections: OrderedDict
 import DataValues
 
 IteratorInterfaceExtensions.isiterable(x::DataFrame) = true
@@ -28,7 +29,7 @@ function _construct_pandas_from_iterabletable(source)
     y = create_columns_from_iterabletable(source, errorhandling=:returnvalue)
     y===nothing && return nothing
     columns, column_names = y[1], y[2]
-    cols = Dict{Symbol,Any}(i[1]=>i[2] for i in zip(column_names, columns))
+    cols = OrderedDict{Symbol,Any}(i[1]=>i[2] for i in zip(column_names, columns))
 
     for (k,v) in pairs(cols)
         if eltype(v)<:DataValues.DataValue

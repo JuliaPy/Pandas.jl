@@ -50,7 +50,7 @@ roll = rolling(Series([1,2,3,4,5]), 3)
 # Issue #71
 julia_df = DataFrames.DataFrame(x=[1,2], y=[missing, missing])
 py_df = Pandas.DataFrame(julia_df)
-expected_df = Pandas.DataFrame(:x=>[1,2], :y=>[NaN, NaN])
+expected_df = Pandas.DataFrame(:x=>[1,2], :y=>[NaN, NaN])[["x", "y"]]
 @test Pandas.equals(py_df, expected_df)
 
 # Issue #68
@@ -68,3 +68,8 @@ py_df = py"get_df"()|>Pandas.DataFrame
 julia_df = DataFrames.DataFrame(py_df)
 
 @test julia_df.a == [DateTime(2021, 1, 15), DateTime(2021, 1, 15), DateTime(2020, 4, 6)]
+
+# Issue #72
+julia_df= DataFrames.DataFrame(C = 1:4, A = 5:8, B = 9:12)
+py_df = Pandas.DataFrame(julia_df)
+@test all(Pandas.columns(py_df) .== ["C","A","B"])
