@@ -91,7 +91,7 @@ age
  29  "Jill"    87
  27  "Jake"    45
 
- >> plot(df3)
+>> plot(df3)
 ```
 
 Input/Output
