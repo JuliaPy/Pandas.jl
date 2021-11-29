@@ -271,7 +271,7 @@ pyattr_set([DataFrame, Series], :T, :abs, :align, :any, :argsort, :asfreq, :asof
 :to_clipboard, :to_csv, :to_dense, :to_dict, :to_excel, :to_gbq, :to_hdf, :to_html,
 :to_json, :to_latex, :to_msgpack, :to_panel, :to_pickle, :to_records, :to_sparse,
 :to_sql, :to_string, :truncate, :tz_conert, :tz_localize, :unstack, :var, :weekday,
-:xs, :merge, :equals)
+:xs, :merge, :equals, :to_parquet)
 pyattr_set([DataFrame], :groupby)
 pyattr_set([Series, DataFrame], :rolling)
 pyattr_set([HDFStore], :put, :append, :get, :select, :info, :keys, :groups, :walk, :close)
@@ -324,7 +324,7 @@ for m in [:read_pickle, :read_csv, :read_html, :read_json, :read_excel, :read_ta
     :rolling_cov, :expanding_cov, :rolling_skew, :expanding_skew, :rolling_kurt,
     :expanding_kurt, :rolling_apply, :expanding_apply, :rolling_quantile,
     :expanding_quantile, :rolling_window, :to_numeric, :read_sql, :read_sql_table,
-    :read_sql_query, :read_hdf]
+    :read_sql_query, :read_hdf, :read_parquet]
     @eval begin
         function $m(args...; kwargs...)
             method = pandas_raw.$(string(m))
