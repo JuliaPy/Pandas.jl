@@ -19,7 +19,7 @@ jobs:
           - windows-latest
         architecture: [x64]
         python-version: ['3']
-        julia-version: ['1.6', 'nightly']
+        julia-version: ['1.6', '1.7', 'nightly']
         include:
           - os: windows-latest
             architecture: x86
