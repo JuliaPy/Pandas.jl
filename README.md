@@ -24,7 +24,7 @@ See the [PyCall configuration](https://github.com/JuliaPy/PyCall.jl#specifying-t
 
 Usage
 ---------
-In general, if ``df`` is a Pandas object (such as a dataframe or series), then the Python command ``df.x(y, w=z)`` becomes ``x(df, y, w=z)`` in Julia. ``df.loc[a,b,c]`` becomes ``loc(df)[a,b,c]`` (same for ``iloc`` and ``ix``). Example:
+In general, if ``df`` is a Pandas object (such as a dataframe or series), then the Python command ``df.x(y, w=z)`` becomes ``x(df, y, w=z)`` in Julia. ``df.loc[a,b,c]`` becomes ``loc(df)[a,b,c]`` (same for ``iloc`` and ``ix``). Also note that booleans must be of the lowercase Julia type so ``pd.Series(series, copy=True)`` becomes ``Pandas.Series(series, copy=true)`` Example:
 
 ```julia
 >> using Pandas
@@ -132,4 +132,4 @@ Changes to the values(...) array propogate back to the underlying series/datafra
 
 Caveats
 ----------
-Panels-related functions are still unwrapped, as well as a few other obscure functions. Note that even if a function is not wrapped explicitly, it can still be called using various methods from [PyCall](https://github.com/stevengj/PyCall.jl).
+Panels-related functions are still unwrapped, as well as a few other obscure functions. Note that even if a function is not wrapped explicitly, it can still be called using various methods from [PyCall](https://github.com/stevengj/PyCall.jl).  Note that with PyCall Julia lowercase booleans must also be used.
