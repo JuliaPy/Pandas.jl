@@ -5,7 +5,7 @@ Pandas.jl
 
 ![CI status](https://github.com/JuliaPy/Pandas.jl/actions/workflows/ci.yml/badge.svg)
 
-This package provides a Julia interface to the excellent [Pandas](http://pandas.pydata.org/pandas-docs/stable/) package. It sticks closely to the Pandas API. The two exceptions are that integer-based indexing is automatically converted from Python's 0-based indexing to Julia's 1-based indexing and Julia's lowercase boolean style is used.
+This package provides a Julia interface to the excellent [Pandas](http://pandas.pydata.org/pandas-docs/stable/) package. It sticks closely to the Pandas API. One exception is that integer-based indexing is automatically converted from Python's 0-based indexing to Julia's 1-based indexing.
 
 Installation
 --------------
@@ -24,7 +24,7 @@ See the [PyCall configuration](https://github.com/JuliaPy/PyCall.jl#specifying-t
 
 Usage
 ---------
-In general, if ``df`` is a Pandas object (such as a dataframe or series), then the Python command ``df.x(y, w=z)`` becomes ``x(df, y, w=z)`` in Julia. ``df.loc[a,b,c]`` becomes ``loc(df)[a,b,c]`` (same for ``iloc`` and ``ix``). Also note that booleans must be of the lowercase Julia type so ``pd.Series(series, copy=True)`` becomes ``Pandas.Series(series, copy=true)`` Example:
+In general, if ``df`` is a Pandas object (such as a dataframe or series), then the Python command ``df.x(y, w=z)`` becomes ``x(df, y, w=z)`` in Julia. ``df.loc[a,b,c]`` becomes ``loc(df)[a,b,c]`` (same for ``iloc`` and ``ix``).  Also note that Julia syntax for types must be used in arguments, so ``pd.Series(series, copy=True)`` becomes ``Pandas.Series(series, copy=true)`` Example:
 
 ```julia
 >> using Pandas
@@ -94,6 +94,10 @@ age
 >> plot(df3)
 ```
 
+#### API method arguments
+
+The values accepted by the API of this package generally go through the same conversion as arguments passed to PyCall, see [PyCall - Usage](https://github.com/JuliaPy/PyCall.jl#usage)
+
 Input/Output
 -------------
 Example:
@@ -132,4 +136,4 @@ Changes to the values(...) array propogate back to the underlying series/datafra
 
 Caveats
 ----------
-Panels-related functions are still unwrapped, as well as a few other obscure functions. Note that even if a function is not wrapped explicitly, it can still be called using various methods from [PyCall](https://github.com/stevengj/PyCall.jl).  Note that with PyCall Julia lowercase booleans must also be used.
+Panels-related functions are still unwrapped, as well as a few other obscure functions. Note that even if a function is not wrapped explicitly, it can still be called using various methods from [PyCall](https://github.com/stevengj/PyCall.jl).
