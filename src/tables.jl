@@ -10,5 +10,4 @@ function _construct_pandas_from_tables(source)
 end
 
 Tables.columnaccess(::DataFrame) = true
-Tables.rowaccess(::DataFrame) = true
 Tables.istable(::DataFrame) = true
