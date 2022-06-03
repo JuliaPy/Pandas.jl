@@ -20,8 +20,14 @@ df_cols = Tables.columns(df)
 @test Tables.getcolumn(df_cols, :Val) == [7863.0, 7834.0, 7803.0]
 @test Tables.getcolumn(df_cols, :Temp) == [20.0, 100.0, 200.0]
 
-@test Tables.rowaccess(df)
 @test Tables.columnaccess(df)
 @test Tables.istable(df)
+
+@test Tables.columntable(df) ==
+    (Temp=[20.0, 100.0, 200.0], Val=[7863.0, 7834.0, 7803.0], Gr=[1, 1, 1])
+@test Tables.rowtable(df) ==
+    [(Temp=20.0, Val=7863.0, Gr=1)
+     (Temp=100.0, Val=7834.0, Gr=1)
+     (Temp=200.0, Val=7803.0, Gr=1)]
 
 end
