@@ -23,8 +23,12 @@ df_cols = Tables.columns(df)
 @test Tables.columnaccess(df)
 @test Tables.istable(df)
 
-@test Tables.columntable(df)[[:Val, :Temp, :Gr]] ==
-    Tables.columntable(Tables.rowtable(df))[[:Val, :Temp, :Gr]] ==
-    (Val=[7863.0, 7834.0, 7803.0], Temp=[20.0, 100.0, 200.0], Gr=[1, 1, 1])
+ct = Tables.columntable(df)
+rt = Tables.rowtable(df)
+@test Tables.columntable(rt) == ct
+@test length(ct) == 3
+@test ct.Val == [7863.0, 7834.0, 7803.0]
+@test ct.Temp == [20.0, 100.0, 200.0]
+@test ct.Gr == [1, 1, 1]
 
 end
