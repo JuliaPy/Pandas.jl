@@ -23,11 +23,8 @@ df_cols = Tables.columns(df)
 @test Tables.columnaccess(df)
 @test Tables.istable(df)
 
-@test Tables.columntable(df) ==
+@test Tables.columntable(df)[[:Val, :Temp, :Gr]] ==
+    Tables.columntable(Tables.rowtable(df))[[:Val, :Temp, :Gr]] ==
     (Val=[7863.0, 7834.0, 7803.0], Temp=[20.0, 100.0, 200.0], Gr=[1, 1, 1])
-@test Tables.rowtable(df) ==
-    [(Val=7863.0, Temp=20.0, Gr=1)
-     (Val=7834.0, Temp=100.0, Gr=1)
-     (Val=7803.0, Temp=200.0, Gr=1)]
 
 end
