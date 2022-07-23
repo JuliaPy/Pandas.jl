@@ -376,7 +376,6 @@ end
 
 for (jl_op, py_op, py_opᵒ) in [(:+, :__add__, :__add__), (:*, :__mul__, :__mul__),
                                (:/, :__div__, :__rdiv__), (:-, :__sub__, :__rsub__),
-                               (:(==), :__eq__, :__eq__), (:!=, :__ne__, :__ne__),
                                (:>, :__gt__, :__lt__), (:<, :__lt__, :__gt__),
                                (:>=, :__ge__, :__le__), (:<=, :__le__, :__ge__),
                                (:&, :__and__, :__and__), (:|, :__or__, :__or__)]
@@ -395,6 +394,19 @@ for (jl_op, py_op, py_opᵒ) in [(:+, :__add__, :__add__), (:*, :__mul__, :__mul
             pandas_wrap(res)
         end
     end
+end
+
+# Special-case the handling of equality-testing to always consider PandasWrapped
+# objects as unequal to non-wrapped objects.
+(==)(x::PandasWrapped, y) = false
+(==)(x, y::PandasWrapped) = false
+(!=)(x::PandasWrapped, y) = true
+(!=)(x, y::PandasWrapped) = true
+function (==)(x::PandasWrapped, y::PandasWrapped)
+    pandas_wrap(x.pyo.__eq__(y))
+end
+function (!=)(x::PandasWrapped, y::PandasWrapped)
+    pandas_wrap(x.pyo.__neq__(y))
 end
 
 for op in [(:-, :__neg__)]
