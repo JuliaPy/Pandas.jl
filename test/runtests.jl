@@ -73,3 +73,11 @@ julia_df = DataFrames.DataFrame(py_df)
 julia_df= DataFrames.DataFrame(C = 1:4, A = 5:8, B = 9:12)
 py_df = Pandas.DataFrame(julia_df)
 @test all(Pandas.columns(py_df) .== ["C","A","B"])
+
+df1 = Pandas.Series(1:2)
+df2 = Pandas.Series(1:2)
+df3 = Pandas.Series(3:4)
+
+@test all(df1 == df1)
+@test all(df1 == df2)
+@test df1 != [1, 2]
