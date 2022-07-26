@@ -81,3 +81,7 @@ df3 = Pandas.Series(3:4)
 @test all(df1 == df1)
 @test all(df1 == df2)
 @test df1 != [1, 2]
+
+# Issue #93
+df = DataFrame(:a=>[1,2], :b=>[4,5], :c=>["a","b"])
+@test values(df) == [1 4 "a"; 2 5 "b"]

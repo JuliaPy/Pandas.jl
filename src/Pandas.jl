@@ -110,14 +110,17 @@ end
 
 
 function Base.values(x::PandasWrapped)
-    # Zero-copy conversion to a Julia native type is possible
-    x_kind = x.pyo.dtype.kind
-    if x_kind in ["i", "u", "f", "b"]
-        pyarray = convert(PyArray, x.pyo."values")
-        unsafe_wrap(Array, pyarray.data, size(pyarray))
-    else  # Convert element by element otherwise
-        collect(x)
+    # Check if zero-copy conversion to a Julia native type
+    # is possible.
+    if hasproperty(x.pyo, :dtype)
+        x_kind = x.pyo.dtype.kind
+        if x_kind in ["i", "u", "f", "b"]
+            pyarray = convert(PyArray, x.pyo."values")
+            return unsafe_wrap(Array, pyarray.data, size(pyarray))
+        end
     end
+    # Convert element by element otherwise
+    Array(x)
 end
 
 """
