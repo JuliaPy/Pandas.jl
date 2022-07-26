@@ -1,6 +1,6 @@
 name = "Pandas"
 uuid = "eadc2687-ae89-51f9-a5d9-86b5a6373a9c"
-version = "1.6.0"
+version = "1.6.1"
 
 [deps]
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
