@@ -5,7 +5,9 @@ Pandas.jl
 
 ![CI status](https://github.com/JuliaPy/Pandas.jl/actions/workflows/ci.yml/badge.svg)
 
-This package provides a Julia interface to the excellent [Pandas](http://pandas.pydata.org/pandas-docs/stable/) package. It sticks closely to the Pandas API. One exception is that integer-based indexing is automatically converted from Python's 0-based indexing to Julia's 1-based indexing.
+This package provides a Julia interface to the excellent [Pandas](http://pandas.pydata.org/pandas-docs/stable/) package from Python. It sticks closely to the Pandas API. One exception is that integer-based indexing is automatically converted from Python's 0-based indexing to Julia's 1-based indexing.
+
+For a pure Julia alternative, please check the excellent [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl) package.
 
 Installation
 --------------
