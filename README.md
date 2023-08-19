@@ -26,7 +26,7 @@ See the [PyCall configuration](https://github.com/JuliaPy/PyCall.jl#specifying-t
 
 Usage
 ---------
-In general, if ``df`` is a Pandas object (such as a dataframe or series), then the Python command ``df.x(y, w=z)`` becomes ``x(df, y, w=z)`` in Julia. ``df.loc[a,b,c]`` becomes ``loc(df)[a,b,c]`` (same for ``iloc`` and ``ix``). Example:
+In general, if ``df`` is a Pandas object (such as a dataframe or series), then the Python command ``df.x(y, w=z)`` becomes ``x(df, y, w=z)`` in Julia. ``df.loc[a,b,c]`` becomes ``loc(df)[a,b,c]`` (same for ``iloc`` and ``ix``).  Also note that Julia syntax for types must be used in arguments, so ``pd.Series(series, copy=True)`` becomes ``Pandas.Series(series, copy=true)`` Example:
 
 ```julia
 >> using Pandas
@@ -95,6 +95,10 @@ age
 
 >> plot(df3)
 ```
+
+#### API method arguments
+
+The values accepted by the API of this package generally go through the same conversion as arguments passed to PyCall, see [PyCall - Usage](https://github.com/JuliaPy/PyCall.jl#usage)
 
 Input/Output
 -------------
